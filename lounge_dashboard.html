@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lounge</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0a0c0f;
+    --bg2:     #111318;
+    --bg3:     #181b22;
+    --bg4:     #1e2129;
+    --border:  rgba(255,255,255,0.06);
+    --border-hi: rgba(255,255,255,0.12);
+    --text:    #e4e6ed;
+    --muted:   #525866;
+    --purple:  #9b7fe8;
+    --purple-dim: rgba(155,127,232,0.12);
+    --amber:   #e8a43a;
+    --amber-dim: rgba(232,164,58,0.12);
+    --teal:    #3ab8e8;
+    --teal-dim: rgba(58,184,232,0.12);
+    --green:   #3ae88a;
+    --green-dim: rgba(58,232,138,0.12);
+    --coral:   #e85c3a;
+    --coral-dim: rgba(232,92,58,0.12);
+    --pink:    #e83a8a;
+    --pink-dim: rgba(232,58,138,0.12);
+    --font:    'Syne', sans-serif;
+    --mono:    'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 20px 40px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--purple);
+  }
+
+  .header-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .ha-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .ha-status.ok  { color: var(--green); }
+  .ha-status.err { color: var(--coral); }
+
+  .clock {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* ── GRID ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 14px;
+  }
+
+  .left-col { display: flex; flex-direction: column; gap: 14px; }
+  .right-col { display: flex; flex-direction: column; gap: 14px; }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--border-hi); }
+
+  /* ── LIGHTS CARD ── */
+  .lights-card {}
+
+  .light-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .light-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .light-row:first-child { padding-top: 0; }
+
+  .light-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .light-icon.lit {
+    background: var(--amber-dim);
+    border-color: rgba(232,164,58,0.4);
+  }
+
+  .light-info { flex: 1; min-width: 0; }
+
+  .light-name {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .light-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .light-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .toggle-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+  .toggle-btn:hover { border-color: var(--border-hi); color: var(--text); }
+  .toggle-btn.on  { border-color: var(--amber); background: var(--amber-dim); color: var(--amber); }
+  .toggle-btn.off { border-color: var(--muted); background: rgba(82,88,102,0.1); color: var(--muted); }
+
+  /* Brightness slider */
+  .brightness-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100px;
+  }
+
+  .bri-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--bg4);
+    outline: none;
+    cursor: pointer;
+  }
+  .bri-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--amber);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .bri-slider::-webkit-slider-thumb:hover { transform: scale(1.3); }
+
+  .bri-val {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--amber);
+    min-width: 28px;
+    text-align: right;
+  }
+
+  /* Colour temp row */
+  .color-temp-row {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .ct-btn {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 4px 6px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .ct-btn:hover { border-color: var(--border-hi); color: var(--text); }
+  .ct-btn.warm  { border-color: #e8823a; background: rgba(232,130,58,0.12); color: #e8823a; }
+  .ct-btn.cool  { border-color: var(--teal); background: var(--teal-dim); color: var(--teal); }
+
+  /* Scene buttons */
+  .scene-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  .scene-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 6px;
+    cursor: pointer;
+    transition: all 0.12s;
+    text-align: center;
+    color: var(--text);
+  }
+  .scene-btn:hover { border-color: var(--purple); background: var(--purple-dim); }
+  .scene-btn:active { transform: scale(0.96); }
+  .scene-btn .s-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+  .scene-btn .s-name { font-size: 10px; font-weight: 600; display: block; }
+
+  /* ── AV CARD ── */
+  .av-card {}
+
+  .av-device {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    transition: border-color 0.15s;
+  }
+  .av-device:last-child { margin-bottom: 0; }
+  .av-device.active { border-color: rgba(58,184,232,0.35); background: rgba(58,184,232,0.04); }
+
+  .av-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .av-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .av-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+  .av-dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  .av-name {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .av-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .av-power-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .av-power-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .av-power-btn.on {
+    border-color: var(--teal);
+    background: var(--teal-dim);
+    color: var(--teal);
+  }
+
+  /* Source selector */
+  .source-row {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  .src-btn {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .src-btn:hover { border-color: var(--border-hi); color: var(--text); }
+  .src-btn.active { border-color: var(--teal); background: var(--teal-dim); color: var(--teal); }
+
+  /* Volume row */
+  .volume-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .vol-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  .vol-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--bg4);
+    outline: none;
+    cursor: pointer;
+  }
+  .vol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--teal);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .vol-slider::-webkit-slider-thumb:hover { transform: scale(1.3); }
+
+  .vol-val {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--teal);
+    min-width: 32px;
+    text-align: right;
+  }
+
+  .mute-btn {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .mute-btn:hover { border-color: var(--coral); color: var(--coral); }
+  .mute-btn.muted { border-color: var(--coral); background: var(--coral-dim); color: var(--coral); }
+
+  /* Harmony activities */
+  .activity-row {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  .act-btn {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+  .act-btn:hover { border-color: var(--purple); color: var(--purple); }
+  .act-btn.active { border-color: var(--purple); background: var(--purple-dim); color: var(--purple); }
+  .act-btn.off-btn:hover { border-color: var(--coral); color: var(--coral); }
+
+  /* ── PRESENCE / SENSOR ROW ── */
+  .sensor-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .sensor-chip {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .chip-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  .chip-val {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.5px;
+  }
+
+  .chip-unit {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--bg3);
+    border: 1px solid var(--purple);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--purple);
+    z-index: 999;
+    transform: translateY(60px);
+    opacity: 0;
+    transition: all 0.25s ease;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  @media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .scene-grid { grid-template-columns: repeat(4, 1fr); }
+    .sensor-strip { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <h1>Lounge <em>Control</em></h1>
+      <div class="header-sub" id="clock">—</div>
+    </div>
+    <div class="header-right">
+      <div class="ha-status" id="haStatus">connecting…</div>
+    </div>
+  </header>
+
+  <!-- SENSOR STRIP -->
+  <div class="sensor-strip" style="margin-bottom:14px">
+    <div class="sensor-chip">
+      <div class="chip-label">Temperature</div>
+      <div class="chip-val" id="val-temp" style="color:var(--amber)">—</div>
+      <div class="chip-unit">°C</div>
+    </div>
+    <div class="sensor-chip">
+      <div class="chip-label">Humidity</div>
+      <div class="chip-val" id="val-hum" style="color:var(--teal)">—</div>
+      <div class="chip-unit">%</div>
+    </div>
+    <div class="sensor-chip">
+      <div class="chip-label">Illuminance</div>
+      <div class="chip-val" id="val-lux" style="color:var(--purple)">—</div>
+      <div class="chip-unit">lux</div>
+    </div>
+    <div class="sensor-chip">
+      <div class="chip-label">Presence</div>
+      <div class="chip-val" id="val-presence" style="color:var(--green);font-size:14px">—</div>
+      <div class="chip-unit" id="val-presence-sub">—</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+
+    <!-- LEFT: LIGHTS -->
+    <div class="left-col">
+
+      <div class="section-label">Lights</div>
+
+      <div class="card lights-card">
+
+        <!-- Ceiling Globes (group) -->
+        <div class="light-row">
+          <div class="light-icon" id="icon-ceiling" onclick="toggleLight('ceiling')">💡</div>
+          <div class="light-info">
+            <div class="light-name">Ceiling Globes</div>
+            <div class="light-meta" id="meta-ceiling">—</div>
+          </div>
+          <div class="light-controls">
+            <div class="brightness-wrap">
+              <input type="range" class="bri-slider" id="bri-ceiling" min="1" max="100" value="80"
+                onchange="setBrightness('ceiling', this.value)"
+                oninput="document.getElementById('bval-ceiling').textContent=this.value+'%'">
+              <div class="bri-val" id="bval-ceiling">80%</div>
+            </div>
+            <button class="toggle-btn on" id="btn-ceiling" onclick="toggleLight('ceiling')">On</button>
+          </div>
+        </div>
+
+        <!-- Globe 1 -->
+        <div class="light-row" style="padding-left:12px">
+          <div class="light-icon" id="icon-g1" onclick="toggleLight('g1')" style="width:28px;height:28px;font-size:13px">💡</div>
+          <div class="light-info">
+            <div class="light-name" style="font-size:12px">Globe 2</div>
+            <div class="light-meta" id="meta-g1">—</div>
+          </div>
+          <div class="light-controls">
+            <div class="color-temp-row">
+              <button class="ct-btn warm" onclick="setColorTemp('g1', 2200)">Warm</button>
+              <button class="ct-btn cool" onclick="setColorTemp('g1', 5000)">Cool</button>
+            </div>
+            <button class="toggle-btn" id="btn-g1" onclick="toggleLight('g1')">Off</button>
+          </div>
+        </div>
+
+        <!-- Globe 2 -->
+        <div class="light-row" style="padding-left:12px">
+          <div class="light-icon" id="icon-g2" onclick="toggleLight('g2')" style="width:28px;height:28px;font-size:13px">💡</div>
+          <div class="light-info">
+            <div class="light-name" style="font-size:12px">Globe 3</div>
+            <div class="light-meta" id="meta-g2">—</div>
+          </div>
+          <div class="light-controls">
+            <div class="color-temp-row">
+              <button class="ct-btn warm" onclick="setColorTemp('g2', 2200)">Warm</button>
+              <button class="ct-btn cool" onclick="setColorTemp('g2', 5000)">Cool</button>
+            </div>
+            <button class="toggle-btn" id="btn-g2" onclick="toggleLight('g2')">Off</button>
+          </div>
+        </div>
+
+        <!-- Tall Lamp -->
+        <div class="light-row">
+          <div class="light-icon" id="icon-lamp" onclick="toggleLight('lamp')">🪔</div>
+          <div class="light-info">
+            <div class="light-name">Tall Lamp</div>
+            <div class="light-meta" id="meta-lamp">—</div>
+          </div>
+          <div class="light-controls">
+            <div class="brightness-wrap">
+              <input type="range" class="bri-slider" id="bri-lamp" min="1" max="100" value="60"
+                onchange="setBrightness('lamp', this.value)"
+                oninput="document.getElementById('bval-lamp').textContent=this.value+'%'">
+              <div class="bri-val" id="bval-lamp">60%</div>
+            </div>
+            <button class="toggle-btn" id="btn-lamp" onclick="toggleLight('lamp')">Off</button>
+          </div>
+        </div>
+
+        <!-- Side Table -->
+        <div class="light-row">
+          <div class="light-icon" id="icon-side" onclick="toggleLight('side')">🔆</div>
+          <div class="light-info">
+            <div class="light-name">Side Table</div>
+            <div class="light-meta" id="meta-side">—</div>
+          </div>
+          <div class="light-controls">
+            <div class="brightness-wrap">
+              <input type="range" class="bri-slider" id="bri-side" min="1" max="100" value="60"
+                onchange="setBrightness('side', this.value)"
+                oninput="document.getElementById('bval-side').textContent=this.value+'%'">
+              <div class="bri-val" id="bval-side">60%</div>
+            </div>
+            <button class="toggle-btn" id="btn-side" onclick="toggleLight('side')">Off</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- LIGHT SCENES -->
+      <div class="section-label">Scenes</div>
+      <div class="card">
+        <div class="scene-grid">
+          <button class="scene-btn" onclick="applyScene('off')">
+            <span class="s-icon">🌑</span><span class="s-name">All off</span>
+          </button>
+          <button class="scene-btn" onclick="applyScene('bright')">
+            <span class="s-icon">☀️</span><span class="s-name">Bright</span>
+          </button>
+          <button class="scene-btn" onclick="applyScene('ambient')">
+            <span class="s-icon">🌆</span><span class="s-name">Ambient</span>
+          </button>
+          <button class="scene-btn" onclick="applyScene('movie')">
+            <span class="s-icon">🎬</span><span class="s-name">Movie</span>
+          </button>
+          <button class="scene-btn" onclick="applyScene('lounge_evening')">
+            <span class="s-icon">🛋</span><span class="s-name">Evening</span>
+          </button>
+          <button class="scene-btn" onclick="applyScene('dim1')">
+            <span class="s-icon">🌕</span><span class="s-name">Dim 1</span>
+          </button>
+          <button class="scene-btn" onclick="applyScene('dim2')">
+            <span class="s-icon">🌔</span><span class="s-name">Dim 2</span>
+          </button>
+          <button class="scene-btn" onclick="applyScene('dim3')">
+            <span class="s-icon">🌒</span><span class="s-name">Dim 3</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: AV -->
+    <div class="right-col">
+
+      <div class="section-label">AV System</div>
+
+      <!-- HARMONY HUB -->
+      <div class="card av-card">
+        <div class="section-label" style="margin-bottom:10px">Harmony Hub — Activities</div>
+        <div class="av-device" id="harmony-device">
+          <div class="av-header">
+            <div class="av-name-row">
+              <div class="av-dot on" id="harmony-dot"></div>
+              <div>
+                <div class="av-name">Harmony Hub</div>
+                <div class="av-sub" id="harmony-activity">Activity: —</div>
+              </div>
+            </div>
+            <button class="av-power-btn off-btn" onclick="harmonyOff()" style="border-color:var(--coral);color:var(--coral)">Power Off</button>
+          </div>
+          <div class="activity-row" id="activity-row">
+            <button class="act-btn" onclick="startActivity('Watch TV new')">📺 Watch TV</button>
+            <button class="act-btn" onclick="startActivity('Watch PC')">🖥 Watch PC</button>
+            <button class="act-btn" onclick="startActivity('Nintendo Switch')">🎮 Nintendo</button>
+            <button class="act-btn" onclick="startActivity('Listen to Music')">🎵 Music</button>
+            <button class="act-btn" onclick="startActivity('Play N64')">👾 N64</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ONKYO AMP -->
+      <div class="card av-card">
+        <div class="section-label" style="margin-bottom:10px">Onkyo TX-NR686 — Amplifier</div>
+        <div class="av-device" id="onkyo-device">
+          <div class="av-header">
+            <div class="av-name-row">
+              <div class="av-dot" id="onkyo-dot"></div>
+              <div>
+                <div class="av-name">TX-NR686</div>
+                <div class="av-sub" id="onkyo-source">Source: —</div>
+              </div>
+            </div>
+            <button class="av-power-btn" id="onkyo-power" onclick="toggleOnkyo()">—</button>
+          </div>
+          <div class="source-row" id="onkyo-sources">
+            <button class="src-btn" onclick="setOnkyoSource('Chromecast')">Chromecast</button>
+            <button class="src-btn" onclick="setOnkyoSource('Nintendo')">Nintendo</button>
+            <button class="src-btn" onclick="setOnkyoSource('TV')">TV/ARC</button>
+            <button class="src-btn" onclick="setOnkyoSource('PC')">PC</button>
+            <button class="src-btn" onclick="setOnkyoSource('Bluray')">Blu-ray</button>
+            <button class="src-btn" onclick="setOnkyoSource('Bluetooth')">BT</button>
+            <button class="src-btn" onclick="setOnkyoSource('Network')">Network</button>
+          </div>
+          <div class="volume-row">
+            <div class="vol-label">Vol</div>
+            <input type="range" class="vol-slider" id="onkyo-vol" min="0" max="100" value="30"
+              onchange="setOnkyoVolume(this.value)"
+              oninput="document.getElementById('onkyo-vol-val').textContent=this.value">
+            <div class="vol-val" id="onkyo-vol-val">30</div>
+            <button class="mute-btn" id="onkyo-mute" onclick="toggleOnkyoMute()">Mute</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SONY TV -->
+      <div class="card av-card">
+        <div class="section-label" style="margin-bottom:10px">Sony KD-55A8F — TV</div>
+        <div class="av-device" id="tv-device">
+          <div class="av-header">
+            <div class="av-name-row">
+              <div class="av-dot" id="tv-dot"></div>
+              <div>
+                <div class="av-name">KD-55A8F</div>
+                <div class="av-sub" id="tv-source">Source: —</div>
+              </div>
+            </div>
+            <button class="av-power-btn" id="tv-power" onclick="toggleTV()">—</button>
+          </div>
+          <div class="source-row">
+            <button class="src-btn" onclick="setTVSource('AV Receiver')">AV Receiver</button>
+            <button class="src-btn" onclick="setTVSource('HDMI 1')">HDMI 1</button>
+            <button class="src-btn" onclick="setTVSource('HDMI 2')">HDMI 2</button>
+            <button class="src-btn" onclick="setTVSource('HDMI 3/ARC')">HDMI 3/ARC</button>
+            <button class="src-btn" onclick="setTVSource('HDMI 4')">HDMI 4</button>
+          </div>
+          <div class="volume-row">
+            <div class="vol-label">Vol</div>
+            <input type="range" class="vol-slider" id="tv-vol" min="0" max="100" value="20"
+              onchange="setTVVolume(this.value)"
+              oninput="document.getElementById('tv-vol-val').textContent=this.value">
+            <div class="vol-val" id="tv-vol-val">20</div>
+            <button class="mute-btn" id="tv-mute" onclick="toggleTVMute()">Mute</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- NVIDIA SHIELD -->
+      <div class="card av-card">
+        <div class="section-label" style="margin-bottom:10px">NVIDIA SHIELD — Media Player</div>
+        <div class="av-device" id="shield-device">
+          <div class="av-header">
+            <div class="av-name-row">
+              <div class="av-dot" id="shield-dot"></div>
+              <div>
+                <div class="av-name">SHIELD</div>
+                <div class="av-sub" id="shield-app">—</div>
+              </div>
+            </div>
+            <button class="av-power-btn" id="shield-power" onclick="toggleShield()">—</button>
+          </div>
+          <div class="source-row">
+            <button class="src-btn" onclick="shieldApp('com.netflix.ninja')">Netflix</button>
+            <button class="src-btn" onclick="shieldApp('com.google.android.youtube.tv')">YouTube</button>
+            <button class="src-btn" onclick="shieldApp('com.plexapp.android')">Plex</button>
+            <button class="src-btn" onclick="shieldApp('com.disney.disneyplus')">Disney+</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── HA CONFIG ──
+const HA_URL   = 'https://ha.slink42.com';
+const _p       = new URLSearchParams(window.location.search);
+const HA_TOKEN = _p.get('token') || localStorage.getItem('ha_lounge_token') || '';
+if (_p.get('token')) localStorage.setItem('ha_lounge_token', _p.get('token'));
+
+// Entity map
+const E = {
+  ceiling:   'light.lounge_ceiling_globes',
+  g1:        'light.lounge_ceiling_globe_2',   // Globe 2
+  g2:        'light.lounge_ceiling_globe_3',   // Globe 3
+  lamp:      'light.talllamp',
+  side:      'light.192_168_104_43',
+  harmony:   'remote.da_hub',
+  onkyo:     'media_player.tx_nr686',
+  tv:        'media_player.bravia_kd_55a8f',
+  shield:    'media_player.shield_android_tv',
+  temp:      'sensor.thermometer_and_presence_lounge_temperature',
+  hum:       'sensor.thermometer_and_presence_lounge_humidity',
+  lux:       'sensor.thermometer_and_presence_lounge_illuminance',
+  presence:  'binary_sensor.thermometer_and_presence_lounge_presence',
+};
+
+// Scene entity IDs
+const SCENES = {
+  bright:        'scene.bright',
+  ambient:       'scene.ambient',
+  lounge_evening:'scene.lounge_evening',
+  dim1:          'scene.lounge_ceiling_globes_dim_1',
+  dim2:          'scene.lounge_ceiling_globes_dim_2',
+  dim3:          'scene.lounge_ceiling_globes_dim_3',
+};
+
+// ── TOKEN PROMPT ──
+if (!HA_TOKEN) {
+  document.body.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+      height:100vh;gap:20px;font-family:'JetBrains Mono',monospace;background:#0a0c0f;color:#e4e6ed;">
+      <div style="font-size:24px;font-family:'Syne',sans-serif;font-weight:800;color:#9b7fe8">Lounge Control</div>
+      <div style="font-size:12px;color:#525866">Enter your HA Long-Lived Access Token</div>
+      <input id="ti" type="password" placeholder="Paste token…"
+        style="background:#111318;border:1px solid rgba(255,255,255,0.12);border-radius:8px;
+               color:#e4e6ed;padding:12px 16px;font-family:'JetBrains Mono',monospace;
+               font-size:12px;width:380px;outline:none"/>
+      <button onclick="(function(){const v=document.getElementById('ti').value.trim();if(!v)return;
+        localStorage.setItem('ha_lounge_token',v);location.reload();})()"
+        style="background:#9b7fe8;color:#0a0c0f;border:none;border-radius:8px;
+               padding:12px 28px;font-family:'JetBrains Mono',monospace;font-size:12px;
+               font-weight:600;cursor:pointer;">Connect</button>
+      <div style="font-size:10px;color:#525866">Profile → Security → Long-Lived Access Tokens</div>
+    </div>`;
+}
+
+// ── HELPERS ──
+async function haCall(domain, service, data) {
+  try {
+    const r = await fetch(`${HA_URL}/api/services/${domain}/${service}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${HA_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!r.ok) throw new Error(r.status);
+    return true;
+  } catch(e) { showToast('⚠ ' + e.message, 'var(--coral)'); return false; }
+}
+
+async function haGet(entityId) {
+  try {
+    const r = await fetch(`${HA_URL}/api/states/${entityId}`, {
+      headers: { Authorization: `Bearer ${HA_TOKEN}` }
+    });
+    return r.ok ? await r.json() : null;
+  } catch { return null; }
+}
+
+async function haGetMany(ids) {
+  const res = await Promise.all(ids.map(haGet));
+  const map = {};
+  ids.forEach((id, i) => { if (res[i]) map[id] = res[i]; });
+  return map;
+}
+
+// ── TOAST ──
+function showToast(msg, color) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = color || 'var(--purple)';
+  t.style.color = color || 'var(--purple)';
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── CLOCK ──
+function tick() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleString('en-AU', {
+      weekday:'short', day:'numeric', month:'short',
+      hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+    });
+}
+tick(); setInterval(tick, 1000);
+
+// ── APPLY LIGHT STATE ──
+function applyLight(key, state) {
+  if (!state) return;
+  const on = state.state === 'on';
+  const bri = on ? Math.round((state.attributes.brightness || 255) / 2.55) : 0;
+  const ct = state.attributes.color_temp_kelvin;
+
+  const icon  = document.getElementById(`icon-${key}`);
+  const btn   = document.getElementById(`btn-${key}`);
+  const meta  = document.getElementById(`meta-${key}`);
+  const briEl = document.getElementById(`bri-${key}`);
+  const bvalEl= document.getElementById(`bval-${key}`);
+
+  if (icon) {
+    icon.classList.toggle('lit', on);
+  }
+  if (btn) {
+    btn.textContent = on ? 'On' : 'Off';
+    btn.className = `toggle-btn ${on ? 'on' : 'off'}`;
+  }
+  if (meta) {
+    if (!on) meta.textContent = 'off';
+    else meta.textContent = `${bri}% bri${ct ? ' · ' + Math.round(ct/100)*100 + 'K' : ''}`;
+  }
+  if (briEl && on) { briEl.value = bri; }
+  if (bvalEl && on) { bvalEl.textContent = bri + '%'; }
+}
+
+// ── APPLY AV STATE ──
+function applyOnkyo(state) {
+  if (!state) return;
+  const on = state.state === 'on';
+  const src = state.attributes.source || '—';
+  const vol = Math.round((state.attributes.volume_level || 0) * 100);
+  const muted = state.attributes.is_volume_muted;
+
+  document.getElementById('onkyo-dot').className = `av-dot ${on ? 'on' : ''}`;
+  document.getElementById('onkyo-device').className = `av-device ${on ? 'active' : ''}`;
+  document.getElementById('onkyo-source').textContent = on ? `Source: ${src}` : 'Off';
+  const pwrBtn = document.getElementById('onkyo-power');
+  pwrBtn.textContent = on ? 'On' : 'Off';
+  pwrBtn.className = `av-power-btn ${on ? 'on' : ''}`;
+  document.getElementById('onkyo-vol').value = vol;
+  document.getElementById('onkyo-vol-val').textContent = vol;
+  document.getElementById('onkyo-mute').className = `mute-btn ${muted ? 'muted' : ''}`;
+
+  // Highlight active source
+  document.querySelectorAll('#onkyo-sources .src-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim() === src);
+  });
+}
+
+function applyTV(state) {
+  if (!state) return;
+  const on = state.state === 'on';
+  const src = state.attributes.source || '—';
+  const vol = Math.round((state.attributes.volume_level || 0) * 100);
+  const muted = state.attributes.is_volume_muted;
+
+  document.getElementById('tv-dot').className = `av-dot ${on ? 'on' : ''}`;
+  document.getElementById('tv-device').className = `av-device ${on ? 'active' : ''}`;
+  document.getElementById('tv-source').textContent = on ? `Source: ${src}` : 'Off';
+  const pwrBtn = document.getElementById('tv-power');
+  pwrBtn.textContent = on ? 'On' : 'Off';
+  pwrBtn.className = `av-power-btn ${on ? 'on' : ''}`;
+  if (vol > 0) {
+    document.getElementById('tv-vol').value = vol;
+    document.getElementById('tv-vol-val').textContent = vol;
+  }
+  document.getElementById('tv-mute').className = `mute-btn ${muted ? 'muted' : ''}`;
+}
+
+function applyShield(state) {
+  if (!state) return;
+  const on = state.state === 'on';
+  document.getElementById('shield-dot').className = `av-dot ${on ? 'on' : ''}`;
+  document.getElementById('shield-device').className = `av-device ${on ? 'active' : ''}`;
+  const pwrBtn = document.getElementById('shield-power');
+  pwrBtn.textContent = on ? 'On' : 'Off';
+  pwrBtn.className = `av-power-btn ${on ? 'on' : ''}`;
+  document.getElementById('shield-app').textContent =
+    on ? (state.attributes.media_title || state.attributes.app_name || 'On') : 'Off';
+}
+
+function applyHarmony(state) {
+  if (!state) return;
+  const act = state.attributes.current_activity || '—';
+  document.getElementById('harmony-activity').textContent = `Activity: ${act}`;
+  document.querySelectorAll('#activity-row .act-btn').forEach(b => {
+    const label = b.textContent.replace(/^[^\s]+\s/, '').trim();
+    b.classList.toggle('active', act.toLowerCase().includes(label.toLowerCase()));
+  });
+}
+
+// ── LOAD ALL STATE ──
+async function loadState() {
+  if (!HA_TOKEN) return;
+  const ids = Object.values(E);
+  const states = await haGetMany(ids);
+
+  applyLight('ceiling', states[E.ceiling]);
+  applyLight('g1',      states[E.g1]);
+  applyLight('g2',      states[E.g2]);
+  applyLight('lamp',    states[E.lamp]);
+  applyLight('side',    states[E.side]);
+  applyOnkyo(states[E.onkyo]);
+  applyTV(states[E.tv]);
+  applyShield(states[E.shield]);
+  applyHarmony(states[E.harmony]);
+
+  // Sensors
+  const s = (id, fallback='—') => {
+    const st = states[id];
+    return st && !isNaN(parseFloat(st.state)) ? parseFloat(st.state).toFixed(1) : fallback;
+  };
+  document.getElementById('val-temp').textContent = s(E.temp);
+  document.getElementById('val-hum').textContent  = s(E.hum);
+  document.getElementById('val-lux').textContent  = s(E.lux);
+
+  const pres = states[E.presence];
+  if (pres) {
+    const occupied = pres.state === 'on';
+    document.getElementById('val-presence').textContent = occupied ? 'Occupied' : 'Vacant';
+    document.getElementById('val-presence').style.color = occupied ? 'var(--green)' : 'var(--muted)';
+    document.getElementById('val-presence-sub').textContent = occupied ? 'Motion detected' : 'No motion';
+  }
+
+  // Connection indicator
+  const el = document.getElementById('haStatus');
+  el.textContent = '● live';
+  el.className = 'ha-status ok';
+}
+
+loadState();
+setInterval(loadState, 20000);
+
+// Initial connection check
+(async () => {
+  if (!HA_TOKEN) return;
+  try {
+    const r = await fetch(`${HA_URL}/api/`, { headers: { Authorization: `Bearer ${HA_TOKEN}` } });
+    const el = document.getElementById('haStatus');
+    if (!r.ok) { el.textContent = '⚠ auth error'; el.className = 'ha-status err'; }
+  } catch { document.getElementById('haStatus').textContent = '⚠ offline'; document.getElementById('haStatus').className = 'ha-status err'; }
+})();
+
+// ── LIGHT CONTROLS ──
+const ENTITY = {
+  ceiling: E.ceiling, g1: E.g1, g2: E.g2, lamp: E.lamp, side: E.side
+};
+
+async function toggleLight(key) {
+  const btn = document.getElementById(`btn-${key}`);
+  const isOn = btn?.classList.contains('on');
+  const domain = 'light';
+  const svc = isOn ? 'turn_off' : 'turn_on';
+  // Optimistic update
+  if (btn) { btn.textContent = isOn ? 'Off' : 'On'; btn.className = `toggle-btn ${isOn ? 'off' : 'on'}`; }
+  const icon = document.getElementById(`icon-${key}`);
+  if (icon) icon.classList.toggle('lit', !isOn);
+  const ok = await haCall(domain, svc, { entity_id: ENTITY[key] });
+  showToast(ok ? `${key} → ${isOn ? 'off' : 'on'}` : 'Failed', ok ? undefined : 'var(--coral)');
+  if (ok) setTimeout(() => loadState(), 1000);
+}
+
+async function setBrightness(key, pct) {
+  const bri = Math.round(pct * 2.55);
+  document.getElementById(`bval-${key}`).textContent = pct + '%';
+  const ok = await haCall('light', 'turn_on', { entity_id: ENTITY[key], brightness: bri });
+  showToast(ok ? `${key} brightness → ${pct}%` : 'Failed', ok ? undefined : 'var(--coral)');
+}
+
+async function setColorTemp(key, kelvin) {
+  const ok = await haCall('light', 'turn_on', { entity_id: ENTITY[key], color_temp_kelvin: kelvin, brightness_pct: 80 });
+  showToast(ok ? `${key} → ${kelvin}K` : 'Failed', ok ? undefined : 'var(--coral)');
+  if (ok) setTimeout(() => loadState(), 800);
+}
+
+// ── SCENES ──
+async function applyScene(name) {
+  if (name === 'off') {
+    const ok = await haCall('light', 'turn_off', { entity_id: 'all', area_id: 'living_room' });
+    showToast(ok ? 'Lights off' : 'Failed', ok ? 'var(--teal)' : 'var(--coral)');
+    if (ok) setTimeout(loadState, 800);
+    return;
+  }
+  if (name === 'movie') {
+    // Movie: lamp on dim warm, ceiling off, side dim
+    await haCall('light', 'turn_off', { entity_id: E.ceiling });
+    await haCall('light', 'turn_on', { entity_id: E.lamp, brightness_pct: 20, color_temp_kelvin: 2000 });
+    await haCall('light', 'turn_on', { entity_id: E.side, brightness_pct: 15, color_temp_kelvin: 2000 });
+    showToast('Movie mode', 'var(--purple)');
+    setTimeout(loadState, 1000);
+    return;
+  }
+  const sceneId = SCENES[name];
+  if (!sceneId) return;
+  const ok = await haCall('scene', 'turn_on', { entity_id: sceneId });
+  showToast(ok ? `Scene: ${name}` : 'Failed', ok ? 'var(--purple)' : 'var(--coral)');
+  if (ok) setTimeout(loadState, 1000);
+}
+
+// ── ONKYO ──
+async function toggleOnkyo() {
+  const btn = document.getElementById('onkyo-power');
+  const isOn = btn.classList.contains('on');
+  const ok = await haCall('media_player', isOn ? 'turn_off' : 'turn_on', { entity_id: E.onkyo });
+  showToast(ok ? `Onkyo → ${isOn ? 'off' : 'on'}` : 'Failed', ok ? undefined : 'var(--coral)');
+  if (ok) setTimeout(loadState, 1500);
+}
+
+async function setOnkyoSource(src) {
+  const ok = await haCall('media_player', 'select_source', { entity_id: E.onkyo, source: src });
+  showToast(ok ? `Onkyo → ${src}` : 'Failed', ok ? undefined : 'var(--coral)');
+  if (ok) setTimeout(loadState, 1000);
+}
+
+async function setOnkyoVolume(val) {
+  document.getElementById('onkyo-vol-val').textContent = val;
+  await haCall('media_player', 'volume_set', { entity_id: E.onkyo, volume_level: val / 100 });
+}
+
+async function toggleOnkyoMute() {
+  const ok = await haCall('media_player', 'volume_mute', { entity_id: E.onkyo, is_volume_muted: true });
+  showToast(ok ? 'Onkyo muted' : 'Failed', ok ? undefined : 'var(--coral)');
+  if (ok) setTimeout(loadState, 800);
+}
+
+// ── TV ──
+async function toggleTV() {
+  const btn = document.getElementById('tv-power');
+  const isOn = btn.classList.contains('on');
+  const ok = await haCall('media_player', isOn ? 'turn_off' : 'turn_on', { entity_id: E.tv });
+  showToast(ok ? `TV → ${isOn ? 'off' : 'on'}` : 'Failed', ok ? undefined : 'var(--coral)');
+  if (ok) setTimeout(loadState, 1500);
+}
+
+async function setTVSource(src) {
+  const ok = await haCall('media_player', 'select_source', { entity_id: E.tv, source: src });
+  showToast(ok ? `TV → ${src}` : 'Failed', ok ? undefined : 'var(--coral)');
+  if (ok) setTimeout(loadState, 1000);
+}
+
+async function setTVVolume(val) {
+  document.getElementById('tv-vol-val').textContent = val;
+  await haCall('media_player', 'volume_set', { entity_id: E.tv, volume_level: val / 100 });
+}
+
+async function toggleTVMute() {
+  const btn = document.getElementById('tv-mute');
+  const muted = btn.classList.contains('muted');
+  await haCall('media_player', 'volume_mute', { entity_id: E.tv, is_volume_muted: !muted });
+  showToast(!muted ? 'TV muted' : 'TV unmuted');
+  setTimeout(loadState, 800);
+}
+
+// ── SHIELD ──
+async function toggleShield() {
+  const btn = document.getElementById('shield-power');
+  const isOn = btn.classList.contains('on');
+  const ok = await haCall('media_player', isOn ? 'turn_off' : 'turn_on', { entity_id: E.shield });
+  showToast(ok ? `SHIELD → ${isOn ? 'off' : 'on'}` : 'Failed', ok ? undefined : 'var(--coral)');
+  if (ok) setTimeout(loadState, 2000);
+}
+
+async function shieldApp(appId) {
+  const ok = await haCall('media_player', 'select_source', { entity_id: E.shield, source: appId });
+  showToast(ok ? `Launching app…` : 'Failed', ok ? 'var(--teal)' : 'var(--coral)');
+}
+
+// ── HARMONY ──
+async function startActivity(activity) {
+  const ok = await haCall('remote', 'turn_on', { entity_id: E.harmony, activity: activity });
+  showToast(ok ? `Starting: ${activity}` : 'Failed', ok ? 'var(--purple)' : 'var(--coral)');
+  if (ok) setTimeout(loadState, 3000);
+}
+
+async function harmonyOff() {
+  const ok = await haCall('remote', 'turn_off', { entity_id: E.harmony });
+  showToast(ok ? 'Harmony off' : 'Failed', ok ? 'var(--teal)' : 'var(--coral)');
+  if (ok) setTimeout(loadState, 2000);
+}
+</script>
+</body>
+</html>

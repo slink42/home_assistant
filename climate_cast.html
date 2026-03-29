@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Climate</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0b0d12;
+    --bg2:     #12151d;
+    --bg3:     #181c27;
+    --border:  rgba(255,255,255,0.07);
+    --text:    #eef0f5;
+    --muted:   #5a6070;
+    --amber:   #f5a623;
+    --teal:    #2dd4bf;
+    --coral:   #f06050;
+    --blue:    #5b9cf0;
+    --green:   #3ddc84;
+    --purple:  #a78bfa;
+    --font:    'Outfit', sans-serif;
+    --mono:    'DM Mono', monospace;
+    --radius:  10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    height: 48px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .topbar-title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--amber);
+    white-space: nowrap;
+  }
+
+  .topbar-clock {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  .weather-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .weather-strip .wtemp {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--amber);
+    font-family: var(--font);
+  }
+
+  .ha-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .ha-status.ok  { color: var(--green); }
+  .ha-status.err { color: var(--coral); }
+
+  /* hide weather details on very small screens */
+  @media (max-width: 480px) {
+    .weather-desc, .weather-detail { display: none; }
+    .topbar-clock { display: none; }
+  }
+
+  /* ── MAIN LAYOUT ── */
+
+  /* Desktop: 3-column fixed canvas */
+  @media (min-width: 900px) {
+    .page-wrap {
+      width: 1024px;
+      height: 600px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 260px 1fr 260px;
+      flex: 1;
+      overflow: hidden;
+    }
+    .col-left  { border-right: 1px solid var(--border); }
+    .col-right { border-left: 1px solid var(--border); }
+  }
+
+  /* Mobile: single column scroll */
+  @media (max-width: 899px) {
+    .page-wrap {
+      width: 100%;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+    .main-grid {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* ── LEFT COL: sensors ── */
+  .col-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+  }
+
+  @media (max-width: 899px) {
+    .col-left {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      padding: 12px 12px 0;
+    }
+    .col-left .col-label { grid-column: 1 / -1; }
+  }
+
+  @media (max-width: 400px) {
+    .col-left { grid-template-columns: 1fr; }
+  }
+
+  .col-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 2px;
+    padding-left: 2px;
+  }
+
+  .sensor-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  @media (min-width: 900px) {
+    .sensor-row { flex: 1; }
+  }
+
+  .sensor-row::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: var(--radius) 0 0 var(--radius);
+  }
+
+  .s-amber::before { background: var(--amber); }
+  .s-teal::before  { background: var(--teal); }
+  .s-blue::before  { background: var(--blue); }
+  .s-green::before { background: var(--green); }
+  .s-coral::before { background: var(--coral); }
+  .s-bluesoft::before { background: rgba(96,160,240,0.6); }
+
+  .sensor-name {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .sensor-val {
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .sensor-unit {
+    font-size: 12px;
+    opacity: 0.5;
+    font-weight: 300;
+  }
+
+  .s-amber .sensor-val   { color: var(--amber); }
+  .s-teal  .sensor-val   { color: var(--teal); }
+  .s-blue  .sensor-val   { color: var(--blue); }
+  .s-green .sensor-val   { color: var(--green); }
+  .s-coral .sensor-val   { color: var(--coral); }
+  .s-bluesoft .sensor-val { color: var(--blue); }
+
+  /* ── CENTRE COL ── */
+  .col-centre {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  @media (max-width: 899px) {
+    .col-centre { padding: 12px; }
+  }
+
+  /* System status bar */
+  .sys-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    flex-shrink: 0;
+  }
+
+  .sys-mode {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sys-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+  .sys-dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .sys-mode-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .sys-mode-text.active { color: var(--green); }
+
+  .sys-supply {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .sys-supply span { color: var(--amber); }
+
+  /* Mode buttons */
+  .mode-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 5px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 480px) {
+    .mode-row { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  }
+
+  .mode-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 10px 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+    text-align: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mode-btn.active-off  { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.07); color: var(--text); }
+  .mode-btn.active-cool { border-color: var(--blue);  background: rgba(91,156,240,0.15); color: var(--blue); }
+  .mode-btn.active-heat { border-color: var(--coral); background: rgba(240,96,80,0.15);  color: var(--coral); }
+  .mode-btn.active-auto { border-color: var(--green); background: rgba(61,220,132,0.15); color: var(--green); }
+  .mode-btn.active-fan  { border-color: var(--teal);  background: rgba(45,212,191,0.15); color: var(--teal); }
+  .mode-btn.active-dry  { border-color: var(--amber); background: rgba(245,166,35,0.15); color: var(--amber); }
+
+  /* Zones */
+  .zones-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    flex: 1;
+  }
+
+  @media (max-width: 899px) {
+    .zones-grid { flex: unset; }
+  }
+
+  @media (max-width: 400px) {
+    .zones-grid { grid-template-columns: 1fr; }
+  }
+
+  .zone-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .zone-card.zone-active {
+    border-color: rgba(61,220,132,0.4);
+    background: rgba(61,220,132,0.04);
+  }
+
+  .zone-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .zone-name {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .zone-temp-reading {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--amber);
+  }
+
+  .zone-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .zone-sp-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .sp-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--muted);
+    font-size: 16px;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.12s;
+    font-family: var(--mono);
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .sp-btn:hover, .sp-btn:active { border-color: var(--amber); color: var(--amber); background: rgba(245,166,35,0.1); }
+
+  .sp-val {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--amber);
+    min-width: 40px;
+    text-align: center;
+  }
+
+  .zone-onoff {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .zon-btn {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .zon-btn.zon-on  { border-color: var(--green); background: rgba(61,220,132,0.12); color: var(--green); }
+  .zon-btn.zon-off { border-color: var(--muted); background: rgba(90,96,112,0.12); }
+
+  /* ── RIGHT COL: presets ── */
+  .col-right {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 6px;
+  }
+
+  @media (max-width: 899px) {
+    .col-right {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      padding: 12px;
+      padding-top: 0;
+      gap: 6px;
+    }
+    .col-right .col-label { grid-column: 1 / -1; }
+  }
+
+  @media (max-width: 400px) {
+    .col-right { grid-template-columns: 1fr; }
+  }
+
+  .preset-btn {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.12s;
+    text-align: left;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (min-width: 900px) {
+    .preset-btn { flex: 1; }
+  }
+
+  .preset-btn:hover, .preset-btn:active {
+    border-color: var(--amber);
+    background: rgba(245,166,35,0.08);
+  }
+
+  .preset-icon { font-size: 20px; flex-shrink: 0; }
+
+  .preset-info { line-height: 1.3; min-width: 0; }
+
+  .preset-name {
+    font-size: 13px;
+    font-weight: 600;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .preset-desc {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: max(16px, env(safe-area-inset-bottom, 16px));
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--bg3);
+    border: 1px solid var(--amber);
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--amber);
+    z-index: 999;
+    opacity: 0;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ── TOKEN OVERLAY ── */
+  .token-overlay {
+    position: fixed; inset: 0;
+    background: rgba(11,13,18,0.97);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999; gap: 16px;
+    font-family: var(--mono);
+    padding: 24px;
+  }
+
+  .token-overlay input {
+    background: var(--bg2);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    width: min(360px, 100%);
+    outline: none;
+  }
+
+  .token-overlay button {
+    background: var(--amber);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 28px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Mobile bottom padding */
+  @media (max-width: 899px) {
+    .main-grid { padding-bottom: env(safe-area-inset-bottom, 12px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">Home Climate</div>
+      <div class="topbar-clock" id="clock">—</div>
+    </div>
+    <div class="weather-strip">
+      <span id="weatherIcon">⛅</span>
+      <span class="wtemp" id="weatherTemp">—°</span>
+      <span class="weather-desc" id="weatherDesc">—</span>
+      <span class="weather-detail">·</span>
+      <span class="weather-detail" id="weatherHum">—% RH</span>
+      <span class="weather-detail">·</span>
+      <span class="weather-detail" id="weatherWind">— km/h</span>
+    </div>
+    <div class="ha-status" id="haStatus">connecting…</div>
+  </div>
+
+  <div class="main-grid">
+
+    <!-- LEFT: sensors -->
+    <div class="col-left">
+      <div class="col-label">Temperatures</div>
+      <div class="sensor-row s-amber">
+        <div class="sensor-name">Outside</div>
+        <div><span class="sensor-val" id="val-outside">—</span><span class="sensor-unit">°C</span></div>
+      </div>
+      <div class="sensor-row s-teal">
+        <div class="sensor-name">Lounge</div>
+        <div><span class="sensor-val" id="val-lounge">—</span><span class="sensor-unit">°C</span></div>
+      </div>
+      <div class="sensor-row s-blue">
+        <div class="sensor-name">Study</div>
+        <div><span class="sensor-val" id="val-study">—</span><span class="sensor-unit">°C</span></div>
+      </div>
+      <div class="sensor-row s-green">
+        <div class="sensor-name">Kitchen</div>
+        <div><span class="sensor-val" id="val-kitchen">—</span><span class="sensor-unit">°C</span></div>
+      </div>
+      <div class="sensor-row s-coral">
+        <div class="sensor-name">Roof</div>
+        <div><span class="sensor-val" id="val-roof">—</span><span class="sensor-unit">°C</span></div>
+      </div>
+      <div class="sensor-row s-bluesoft">
+        <div class="sensor-name">Humidity</div>
+        <div><span class="sensor-val" id="val-humidity">—</span><span class="sensor-unit">%</span></div>
+      </div>
+    </div>
+
+    <!-- CENTRE: controls -->
+    <div class="col-centre">
+
+      <!-- system status -->
+      <div class="sys-bar">
+        <div class="sys-mode">
+          <div class="sys-dot" id="sysDot"></div>
+          <div class="sys-mode-text" id="sysLabel">off</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div class="sys-supply">Fan: <span id="fanLabel">—</span></div>
+          <div class="sys-supply">Supply: <span id="supplyTemp">—°</span></div>
+        </div>
+      </div>
+
+      <!-- mode buttons -->
+      <div class="mode-row">
+        <button class="mode-btn active-off" id="btn-off"  onclick="setMode('off')">Off</button>
+        <button class="mode-btn" id="btn-cool"            onclick="setMode('cool')">Cool</button>
+        <button class="mode-btn" id="btn-heat"            onclick="setMode('heat')">Heat</button>
+        <button class="mode-btn" id="btn-auto"            onclick="setMode('heat_cool')">Auto</button>
+        <button class="mode-btn" id="btn-fan"             onclick="setMode('fan_only')">Fan</button>
+        <button class="mode-btn" id="btn-dry"             onclick="setMode('dry')">Dry</button>
+      </div>
+
+      <!-- zones -->
+      <div class="zones-grid">
+
+        <div class="zone-card" id="zcard-living">
+          <div class="zone-top">
+            <div class="zone-name">Living</div>
+            <div class="zone-temp-reading" id="zt-living">—°</div>
+          </div>
+          <div class="zone-controls">
+            <div class="zone-sp-row">
+              <button class="sp-btn" onclick="adjustZoneSetpoint('living',-0.5)">−</button>
+              <div class="sp-val" id="sp-living">—°</div>
+              <button class="sp-btn" onclick="adjustZoneSetpoint('living',0.5)">+</button>
+            </div>
+            <div class="zone-onoff">
+              <button class="zon-btn" id="zon-living-on"  onclick="toggleZone('living','on')">On</button>
+              <button class="zon-btn" id="zon-living-off" onclick="toggleZone('living','off')">Off</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="zone-card" id="zcard-study">
+          <div class="zone-top">
+            <div class="zone-name">Study</div>
+            <div class="zone-temp-reading" id="zt-study">—°</div>
+          </div>
+          <div class="zone-controls">
+            <div class="zone-sp-row">
+              <button class="sp-btn" onclick="adjustZoneSetpoint('study',-0.5)">−</button>
+              <div class="sp-val" id="sp-study">—°</div>
+              <button class="sp-btn" onclick="adjustZoneSetpoint('study',0.5)">+</button>
+            </div>
+            <div class="zone-onoff">
+              <button class="zon-btn" id="zon-study-on"  onclick="toggleZone('study','on')">On</button>
+              <button class="zon-btn" id="zon-study-off" onclick="toggleZone('study','off')">Off</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="zone-card" id="zcard-bedroom">
+          <div class="zone-top">
+            <div class="zone-name">Bedroom</div>
+            <div class="zone-temp-reading" id="zt-bedroom">—°</div>
+          </div>
+          <div class="zone-controls">
+            <div class="zone-sp-row">
+              <button class="sp-btn" onclick="adjustZoneSetpoint('bedroom',-0.5)">−</button>
+              <div class="sp-val" id="sp-bedroom">—°</div>
+              <button class="sp-btn" onclick="adjustZoneSetpoint('bedroom',0.5)">+</button>
+            </div>
+            <div class="zone-onoff">
+              <button class="zon-btn" id="zon-bedroom-on"  onclick="toggleZone('bedroom','on')">On</button>
+              <button class="zon-btn" id="zon-bedroom-off" onclick="toggleZone('bedroom','off')">Off</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="zone-card" id="zcard-dining">
+          <div class="zone-top">
+            <div class="zone-name">Kitchen / Dining</div>
+            <div class="zone-temp-reading" id="zt-dining">—°</div>
+          </div>
+          <div class="zone-controls">
+            <div class="zone-sp-row">
+              <button class="sp-btn" onclick="adjustZoneSetpoint('dining',-0.5)">−</button>
+              <div class="sp-val" id="sp-dining">—°</div>
+              <button class="sp-btn" onclick="adjustZoneSetpoint('dining',0.5)">+</button>
+            </div>
+            <div class="zone-onoff">
+              <button class="zon-btn" id="zon-dining-on"  onclick="toggleZone('dining','on')">On</button>
+              <button class="zon-btn" id="zon-dining-off" onclick="toggleZone('dining','off')">Off</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: presets -->
+    <div class="col-right">
+      <div class="col-label">Presets</div>
+      <button class="preset-btn" onclick="applyPreset('away')">
+        <div class="preset-icon">🏠</div>
+        <div class="preset-info"><span class="preset-name">Away</span><span class="preset-desc">All off</span></div>
+      </button>
+      <button class="preset-btn" onclick="applyPreset('sleep')">
+        <div class="preset-icon">🌙</div>
+        <div class="preset-info"><span class="preset-name">Sleep</span><span class="preset-desc">Bedroom · 22°</span></div>
+      </button>
+      <button class="preset-btn" onclick="applyPreset('work')">
+        <div class="preset-icon">💻</div>
+        <div class="preset-info"><span class="preset-name">Work + kitchen</span><span class="preset-desc">Study + dining · 22°</span></div>
+      </button>
+      <button class="preset-btn" onclick="applyPreset('study')">
+        <div class="preset-icon">🖥</div>
+        <div class="preset-info"><span class="preset-name">Study only</span><span class="preset-desc">Study · 22°</span></div>
+      </button>
+      <button class="preset-btn" onclick="applyPreset('evening')">
+        <div class="preset-icon">🛋</div>
+        <div class="preset-info"><span class="preset-name">Evening</span><span class="preset-desc">Living + dining · 22°</span></div>
+      </button>
+      <button class="preset-btn" onclick="applyPreset('dehumid')">
+        <div class="preset-icon">💧</div>
+        <div class="preset-info"><span class="preset-name">Dehumidify</span><span class="preset-desc">Dry · kitchen/dining</span></div>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── HA CONFIG ──
+const HA_URL = 'https://ha.slink42.com';
+
+const ENTITIES = {
+  controller: 'climate.izone_controller_000099968',
+  living:     'climate.izone_living',
+  study:      'climate.izone_study',
+  bedroom:    'climate.izone_bedroom',
+  dining:     'climate.izone_dining',
+};
+
+// ── TOKEN RESOLUTION ──
+// Priority: 1) ./token file  2) localStorage  3) manual overlay
+let HA_TOKEN = '';
+
+async function resolveToken() {
+  // 1. Try fetching a token file from the same folder
+  try {
+    const r = await fetch('./token', { cache: 'no-store' });
+    if (r.ok) {
+      const t = (await r.text()).trim();
+      if (t) { HA_TOKEN = t; return; }
+    }
+  } catch { /* file not present or CORS — fall through */ }
+
+  // 2. Try localStorage
+  const stored = localStorage.getItem('ha_climate_token');
+  if (stored) { HA_TOKEN = stored; return; }
+
+  // 3. Show manual entry overlay
+  const o = document.createElement('div');
+  o.className = 'token-overlay';
+  o.innerHTML = `
+    <div style="color:var(--amber);font-size:18px;font-weight:600">HA Token Required</div>
+    <div style="color:var(--muted);font-size:12px;max-width:320px;text-align:center;line-height:1.6">Profile → Security → Long-Lived Access Tokens → Create<br><br>Or place a <code style="color:var(--amber)">token</code> file in the same folder as this page.</div>
+    <input id="ti" type="password" placeholder="Paste token…"/>
+    <button onclick="saveToken()">Connect</button>`;
+  document.body.appendChild(o);
+  window._to = o;
+  // Wait for the user to submit before continuing
+  await new Promise(resolve => { window._tokenResolve = resolve; });
+}
+
+window.saveToken = () => {
+  const v = document.getElementById('ti').value.trim();
+  if (!v) return;
+  localStorage.setItem('ha_climate_token', v);
+  HA_TOKEN = v;
+  window._to.remove();
+  window._tokenResolve();
+};
+
+// ── HELPERS ──
+async function haCall(service, data) {
+  const [d, s] = service.split('.');
+  try {
+    const r = await fetch(`${HA_URL}/api/services/${d}/${s}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${HA_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!r.ok) throw new Error(`${r.status}`);
+    return true;
+  } catch(e) { showToast('⚠ ' + e.message, 'var(--coral)'); return false; }
+}
+
+async function haGetStates(ids) {
+  const res = await Promise.all(ids.map(id =>
+    fetch(`${HA_URL}/api/states/${id}`, { headers: { Authorization: `Bearer ${HA_TOKEN}` } })
+      .then(r => r.ok ? r.json() : null).catch(() => null)
+  ));
+  const map = {};
+  ids.forEach((id, i) => { if (res[i]) map[id] = res[i]; });
+  return map;
+}
+
+// ── TOAST ──
+function showToast(msg, color) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = color || 'var(--amber)';
+  t.style.color = color || 'var(--amber)';
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── CLOCK ──
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    n.toLocaleDateString('en-AU', {weekday:'short',day:'numeric',month:'short'}) + '  ' +
+    n.toLocaleTimeString('en-AU', {hour:'2-digit',minute:'2-digit',hour12:false});
+}
+updateClock();
+setInterval(updateClock, 5000);
+
+// ── WEATHER ICONS ──
+const W_ICONS = { sunny:'☀️', 'clear-night':'🌙', partlycloudy:'⛅', cloudy:'☁️', fog:'🌫️', rainy:'🌧️', snowy:'❄️', lightning:'⛈️', windy:'💨', pouring:'🌧️', hail:'🌨️' };
+
+// ── ZONE STATE ──
+const zoneSetpoints = { living:22.5, study:22.5, bedroom:22.5, dining:22.5 };
+
+function applyZoneUI(zone, state) {
+  if (!state) return;
+  const s  = state.state;
+  const sp = state.attributes.temperature;
+  const ct = state.attributes.current_temperature;
+
+  const card   = document.getElementById(`zcard-${zone}`);
+  const btnOn  = document.getElementById(`zon-${zone}-on`);
+  const btnOff = document.getElementById(`zon-${zone}-off`);
+  const spEl   = document.getElementById(`sp-${zone}`);
+  const ztEl   = document.getElementById(`zt-${zone}`);
+
+  if (ct != null) ztEl.textContent = parseFloat(ct).toFixed(1) + '°';
+
+  if (s === 'off') {
+    card.classList.remove('zone-active');
+    btnOn.classList.remove('zon-on'); btnOff.classList.add('zon-off');
+  } else {
+    card.classList.add('zone-active');
+    btnOn.classList.add('zon-on'); btnOff.classList.remove('zon-off');
+  }
+
+  if (sp != null) {
+    zoneSetpoints[zone] = sp;
+    if (spEl) spEl.textContent = parseFloat(sp).toFixed(1) + '°';
+  }
+}
+
+function applyControllerUI(state) {
+  if (!state) return;
+  const mode   = state.state;
+  const fan    = state.attributes.fan_mode || 'auto';
+  const supply = state.attributes.supply_temperature;
+
+  const modeMap   = { off:'active-off', cool:'active-cool', heat:'active-heat', heat_cool:'active-auto', fan_only:'active-fan', dry:'active-dry' };
+  const modeBtnId = { off:'btn-off', cool:'btn-cool', heat:'btn-heat', heat_cool:'btn-auto', fan_only:'btn-fan', dry:'btn-dry' };
+
+  Object.values(modeBtnId).forEach(id => document.getElementById(id).className = 'mode-btn');
+  if (modeBtnId[mode]) document.getElementById(modeBtnId[mode]).classList.add(modeMap[mode]);
+
+  const dot = document.getElementById('sysDot');
+  const lbl = document.getElementById('sysLabel');
+  if (mode === 'off') {
+    dot.className = 'sys-dot'; lbl.textContent = 'off'; lbl.className = 'sys-mode-text';
+  } else {
+    dot.className = 'sys-dot on'; lbl.textContent = mode.replace(/_/g,' '); lbl.className = 'sys-mode-text active';
+  }
+
+  document.getElementById('fanLabel').textContent = fan;
+  if (supply != null) document.getElementById('supplyTemp').textContent = parseFloat(supply).toFixed(1) + '°';
+}
+
+// ── LIVE STATE ──
+async function loadState() {
+  if (!HA_TOKEN) return;
+  const ids = [
+    ENTITIES.controller, ENTITIES.living, ENTITIES.study, ENTITIES.bedroom, ENTITIES.dining,
+    'sensor.thermometer_outside_temperature',
+    'sensor.thermometer_and_presence_lounge_temperature',
+    'sensor.thermometer_study_temperature',
+    'sensor.temperature_and_humidity_alarm_temperature',
+    'sensor.temperature_and_humidity_alarm_humidity',
+    'sensor.thermometer_roof_temperature',
+    'weather.forecast_home',
+  ];
+  const st = await haGetStates(ids);
+
+  applyControllerUI(st[ENTITIES.controller]);
+  applyZoneUI('living',  st[ENTITIES.living]);
+  applyZoneUI('study',   st[ENTITIES.study]);
+  applyZoneUI('bedroom', st[ENTITIES.bedroom]);
+  applyZoneUI('dining',  st[ENTITIES.dining]);
+
+  const sens = {
+    'sensor.thermometer_outside_temperature':            'val-outside',
+    'sensor.thermometer_and_presence_lounge_temperature':'val-lounge',
+    'sensor.thermometer_study_temperature':              'val-study',
+    'sensor.temperature_and_humidity_alarm_temperature': 'val-kitchen',
+    'sensor.temperature_and_humidity_alarm_humidity':    'val-humidity',
+    'sensor.thermometer_roof_temperature':               'val-roof',
+  };
+  Object.entries(sens).forEach(([id, elId]) => {
+    const s = st[id];
+    if (s && !isNaN(parseFloat(s.state))) {
+      document.getElementById(elId).textContent = parseFloat(s.state).toFixed(1);
+    }
+  });
+
+  const w = st['weather.forecast_home'];
+  if (w) {
+    const a = w.attributes;
+    document.getElementById('weatherIcon').textContent = W_ICONS[w.state] || '🌡️';
+    document.getElementById('weatherTemp').textContent = parseFloat(a.temperature).toFixed(1) + '°';
+    document.getElementById('weatherDesc').textContent = w.state.replace(/_/g,' ');
+    document.getElementById('weatherHum').textContent  = Math.round(a.humidity) + '% RH';
+    document.getElementById('weatherWind').textContent = Math.round(a.wind_speed) + ' km/h';
+  }
+
+  const el = document.getElementById('haStatus');
+  el.textContent = '● live';
+  el.className = 'ha-status ok';
+}
+
+// ── INIT ──
+(async () => {
+  await resolveToken();
+
+  // Connectivity check
+  try {
+    const r = await fetch(`${HA_URL}/api/`, { headers: { Authorization: `Bearer ${HA_TOKEN}` } });
+    const el = document.getElementById('haStatus');
+    if (r.ok) { el.textContent = '● live'; el.className = 'ha-status ok'; }
+    else       { el.textContent = '⚠ auth error'; el.className = 'ha-status err'; }
+  } catch { document.getElementById('haStatus').textContent = '⚠ offline'; document.getElementById('haStatus').className = 'ha-status err'; }
+
+  loadState();
+  setInterval(loadState, 30000);
+})();
+
+// ── CONTROLS ──
+async function setMode(mode) {
+  const modeMap   = { off:'active-off', cool:'active-cool', heat:'active-heat', heat_cool:'active-auto', fan_only:'active-fan', dry:'active-dry' };
+  const modeBtnId = { off:'btn-off', cool:'btn-cool', heat:'btn-heat', heat_cool:'btn-auto', fan_only:'btn-fan', dry:'btn-dry' };
+  Object.values(modeBtnId).forEach(id => document.getElementById(id).className = 'mode-btn');
+  document.getElementById(modeBtnId[mode]).classList.add(modeMap[mode]);
+  const dot = document.getElementById('sysDot');
+  const lbl = document.getElementById('sysLabel');
+  if (mode === 'off') { dot.className='sys-dot'; lbl.textContent='off'; lbl.className='sys-mode-text'; }
+  else {
+    dot.className='sys-dot on'; lbl.textContent=mode.replace(/_/g,' '); lbl.className='sys-mode-text active';
+    currentControllerMode = mode; // keep in sync
+  }
+  const ok = await haCall('climate.set_hvac_mode', { entity_id: ENTITIES.controller, hvac_mode: mode });
+  if (ok) {
+    showToast(`Mode → ${mode.replace(/_/g,' ')}`);
+  } else {
+    await loadState();
+  }
+}
+
+// FIX: zone "on" now inherits the controller's current mode instead of hardcoding heat_cool
+async function toggleZone(zone, state) {
+  const card   = document.getElementById(`zcard-${zone}`);
+  const btnOn  = document.getElementById(`zon-${zone}-on`);
+  const btnOff = document.getElementById(`zon-${zone}-off`);
+
+  // Save previous UI state for potential revert
+  const wasActive = card.classList.contains('zone-active');
+
+  // Optimistic UI update
+  if (state === 'off') {
+    card.classList.remove('zone-active');
+    btnOn.classList.remove('zon-on'); btnOff.classList.add('zon-off');
+  } else {
+    card.classList.add('zone-active');
+    btnOn.classList.add('zon-on'); btnOff.classList.remove('zon-off');
+  }
+
+  // iZone zones only support: off, fan_only, heat_cool — always use heat_cool when turning on
+  const hvacMode = state === 'off' ? 'off' : 'heat_cool';
+  const ok = await haCall('climate.set_hvac_mode', { entity_id: ENTITIES[zone], hvac_mode: hvacMode });
+
+  const label = zone.charAt(0).toUpperCase() + zone.slice(1);
+  if (ok) {
+    showToast(`${label} → ${state === 'off' ? 'Off' : 'On'}`);
+  } else {
+    // Revert UI on failure
+    if (wasActive) {
+      card.classList.add('zone-active'); btnOn.classList.add('zon-on'); btnOff.classList.remove('zon-off');
+    } else {
+      card.classList.remove('zone-active'); btnOn.classList.remove('zon-on'); btnOff.classList.add('zon-off');
+    }
+  }
+}
+
+async function adjustZoneSetpoint(zone, delta) {
+  const prevSp = zoneSetpoints[zone];
+  zoneSetpoints[zone] = Math.round((zoneSetpoints[zone] + delta) * 2) / 2;
+  zoneSetpoints[zone] = Math.min(26, Math.max(16, zoneSetpoints[zone]));
+  const sp = zoneSetpoints[zone];
+  document.getElementById(`sp-${zone}`).textContent = sp.toFixed(1) + '°';
+
+  const ok = await haCall('climate.set_temperature', { entity_id: ENTITIES[zone], temperature: sp });
+  const label = zone.charAt(0).toUpperCase() + zone.slice(1);
+  if (ok) {
+    showToast(`${label} → ${sp.toFixed(1)}°C`);
+  } else {
+    // Revert setpoint on failure
+    zoneSetpoints[zone] = prevSp;
+    document.getElementById(`sp-${zone}`).textContent = prevSp.toFixed(1) + '°';
+  }
+}
+
+async function applyPreset(preset) {
+  const presets = {
+    away:    { mode:'off',       zones:{living:'off',study:'off',bedroom:'off',dining:'off'},            desc:'Away' },
+    sleep:   { mode:'heat_cool', zones:{living:'off',study:'off',bedroom:'on', dining:'off'},            temps:{bedroom:22}, desc:'Sleep' },
+    work:    { mode:'heat_cool', zones:{living:'off',study:'on', bedroom:'off',dining:'on'},             temps:{study:22,dining:22}, desc:'Work + Kitchen' },
+    study:   { mode:'heat_cool', zones:{living:'off',study:'on', bedroom:'off',dining:'off'},            temps:{study:22}, desc:'Study only' },
+    evening: { mode:'heat_cool', zones:{living:'on', study:'off',bedroom:'off',dining:'on'},             temps:{living:22,dining:22}, desc:'Evening' },
+    dehumid: { mode:'dry',       zones:{living:'off',study:'off',bedroom:'off',dining:'on'},             desc:'Dehumidify' },
+  };
+  const p = presets[preset];
+  if (!p) return;
+  showToast(`Applying: ${p.desc}…`);
+
+  // NOTE: presets no longer blindly overwrite all zone setpoints —
+  // only set temperatures for zones specified in the preset's temps map
+  const modeCalls = [ haCall('climate.set_hvac_mode', { entity_id: ENTITIES.controller, hvac_mode: p.mode }) ];
+  const zoneCalls = Object.entries(p.zones).map(([z, s]) => {
+    const hvacMode = s === 'off' ? 'off' : 'heat_cool';
+    return haCall('climate.set_hvac_mode', { entity_id: ENTITIES[z], hvac_mode: hvacMode });
+  });
+  const tempCalls = p.temps
+    ? Object.entries(p.temps).map(([z, t]) => haCall('climate.set_temperature', { entity_id: ENTITIES[z], temperature: t }))
+    : [];
+
+  const results = await Promise.all([...modeCalls, ...zoneCalls, ...tempCalls]);
+
+  // Update UI
+  const modeMap   = { off:'active-off', cool:'active-cool', heat:'active-heat', heat_cool:'active-auto', fan_only:'active-fan', dry:'active-dry' };
+  const modeBtnId = { off:'btn-off', cool:'btn-cool', heat:'btn-heat', heat_cool:'btn-auto', fan_only:'btn-fan', dry:'btn-dry' };
+  Object.values(modeBtnId).forEach(id => document.getElementById(id).className = 'mode-btn');
+  if (modeBtnId[p.mode]) document.getElementById(modeBtnId[p.mode]).classList.add(modeMap[p.mode]);
+  const dot = document.getElementById('sysDot'), lbl = document.getElementById('sysLabel');
+  if (p.mode === 'off') { dot.className='sys-dot'; lbl.textContent='off'; lbl.className='sys-mode-text'; }
+  else { dot.className='sys-dot on'; lbl.textContent=p.mode.replace(/_/g,' '); lbl.className='sys-mode-text active'; }
+
+  Object.entries(p.zones).forEach(([z, s]) => {
+    const card=document.getElementById(`zcard-${z}`), on=document.getElementById(`zon-${z}-on`), off=document.getElementById(`zon-${z}-off`);
+    if (s==='off') { card.classList.remove('zone-active'); on.classList.remove('zon-on'); off.classList.add('zon-off'); }
+    else { card.classList.add('zone-active'); on.classList.add('zon-on'); off.classList.remove('zon-off'); }
+  });
+
+  if (p.temps) {
+    Object.entries(p.temps).forEach(([z, t]) => {
+      zoneSetpoints[z] = t;
+      document.getElementById(`sp-${z}`).textContent = t.toFixed(1) + '°';
+    });
+  }
+
+  const allOk = results.every(Boolean);
+  showToast(allOk ? `✓ ${p.desc}` : `⚠ Some calls failed`, allOk ? 'var(--green)' : 'var(--coral)');
+
+  // Re-sync state on any failure
+  if (!allOk) setTimeout(loadState, 500);
+}
+</script>
+</body>
+</html>
