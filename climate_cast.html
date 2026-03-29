@@ -1382,6 +1382,12 @@ function onPopupKeydown(e) {
     startX = null;
   });
 })();
+
+// ── MAIN ──
+(async function() {
+  await loadState();
+  setInterval(loadState, 15000);
+})();
 </script>
 
 
