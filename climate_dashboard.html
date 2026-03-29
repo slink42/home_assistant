@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<!-- saved from url=(0057)file:///C:/Users/stuar/Downloads/climate_dashboard_2.html -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Home Climate — Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com/">
-<link href="./climate_dashboard_files/css2" rel="stylesheet">
-<script src="./climate_dashboard_files/chart.umd.min.js.download"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <style>
   :root {
     --bg: #0d0f14;
@@ -30,9 +31,7 @@
     --font-mono: 'DM Mono', monospace;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
     background: var(--bg);
     color: var(--text);
@@ -41,8 +40,6 @@
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
   }
-
-  /* Subtle grid background */
   body::before {
     content: '';
     position: fixed;
@@ -54,7 +51,6 @@
     pointer-events: none;
     z-index: 0;
   }
-
   .page {
     position: relative;
     z-index: 1;
@@ -62,12 +58,7 @@
     margin: 0 auto;
     padding: 20px 20px calc(20px + var(--safe-bottom));
   }
-
-  @media (max-width: 600px) {
-    .page { padding: 12px 12px calc(16px + var(--safe-bottom)); }
-  }
-
-  /* ── HEADER ── */
+  @media (max-width: 600px) { .page { padding: 12px 12px calc(16px + var(--safe-bottom)); } }
   header {
     display: flex;
     align-items: flex-start;
@@ -77,20 +68,9 @@
     border-bottom: 1px solid var(--border);
     gap: 12px;
   }
-
-  .header-left h1 {
-    font-size: 24px;
-    font-weight: 600;
-    letter-spacing: -0.5px;
-    line-height: 1;
-  }
-
-  @media (max-width: 600px) {
-    .header-left h1 { font-size: 20px; }
-  }
-
+  .header-left h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; line-height: 1; }
+  @media (max-width: 600px) { .header-left h1 { font-size: 20px; } }
   .header-left h1 span { color: var(--amber); }
-
   .header-left .sub {
     font-family: var(--font-mono);
     font-size: 10px;
@@ -100,9 +80,7 @@
     text-transform: uppercase;
     line-height: 1.5;
   }
-
   .header-right { flex-shrink: 0; }
-
   .weather-pill {
     display: flex;
     align-items: center;
@@ -112,29 +90,12 @@
     border-radius: 40px;
     padding: 7px 14px;
   }
-
   .weather-icon { font-size: 20px; }
-
   .weather-info { line-height: 1.2; }
   .weather-temp { font-size: 16px; font-weight: 600; color: var(--amber); }
   .weather-desc { font-size: 10px; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
-
-  .weather-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--muted);
-  }
-
-  /* hide weather stats on small phones */
-  @media (max-width: 480px) {
-    .weather-stats { display: none; }
-    .weather-pill { padding: 6px 12px; }
-  }
-
-  /* ── SECTION DIVIDER ── */
+  .weather-stats { display: flex; flex-direction: column; gap: 2px; font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+  @media (max-width: 480px) { .weather-stats { display: none; } .weather-pill { padding: 6px 12px; } }
   .section-divider {
     font-family: var(--font-mono);
     font-size: 10px;
@@ -146,634 +107,112 @@
     align-items: center;
     gap: 10px;
   }
-
-  .section-divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  /* ── CARD ── */
-  .card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s;
-  }
-
+  .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; position: relative; overflow: hidden; transition: border-color 0.2s; }
   .card:hover { border-color: var(--border-hi); }
-
-  .card-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-
-  /* ── TOP ROW: TEMP SENSORS ── */
-  .grid-top {
-    display: grid;
-    gap: 10px;
-    grid-template-columns: repeat(5, 1fr);
-  }
-
+  .card-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px; }
+  .grid-top { display: grid; gap: 10px; grid-template-columns: repeat(5, 1fr); }
   @media (max-width: 1000px) { .grid-top { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 600px)  { .grid-top { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
-
-  .temp-card .big-temp {
-    font-size: 36px;
-    font-weight: 300;
-    line-height: 1;
-    letter-spacing: -2px;
-  }
-
-  @media (max-width: 600px) {
-    .temp-card .big-temp { font-size: 30px; }
-  }
-
-  .temp-card .unit {
-    font-size: 15px;
-    font-weight: 300;
-    opacity: 0.6;
-    vertical-align: super;
-    letter-spacing: 0;
-  }
-
-  .temp-card .trend {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    margin-top: 5px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .trend-up { color: var(--coral); }
-  .trend-dn { color: var(--teal); }
-  .trend-flat { color: var(--muted); }
-
-  .card-accent-bar {
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    border-radius: 12px 0 0 12px;
-  }
-
-  .c-amber .card-accent-bar { background: var(--amber); }
-  .c-teal  .card-accent-bar { background: var(--teal); }
-  .c-coral .card-accent-bar { background: var(--coral); }
-  .c-blue  .card-accent-bar { background: var(--blue); }
-  .c-green .card-accent-bar { background: var(--green); }
-  .c-amber .big-temp { color: var(--amber); }
-  .c-teal  .big-temp { color: var(--teal); }
-  .c-coral .big-temp { color: var(--coral); }
-  .c-blue  .big-temp { color: var(--blue); }
-  .c-green .big-temp { color: var(--green); }
-
-  /* ── MID ROW: CHART + IZONE ── */
-  .grid-mid {
-    display: grid;
-    gap: 10px;
-    grid-template-columns: 2fr 1fr;
-  }
-
+  .temp-card .big-temp { font-size: 36px; font-weight: 300; line-height: 1; letter-spacing: -2px; }
+  @media (max-width: 600px) { .temp-card .big-temp { font-size: 30px; } }
+  .temp-card .unit { font-size: 15px; font-weight: 300; opacity: 0.6; vertical-align: super; letter-spacing: 0; }
+  .temp-card .trend { font-family: var(--font-mono); font-size: 10px; margin-top: 5px; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .trend-up { color: var(--coral); } .trend-dn { color: var(--teal); } .trend-flat { color: var(--muted); }
+  .card-accent-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 12px 0 0 12px; }
+  .c-amber .card-accent-bar { background: var(--amber); } .c-teal .card-accent-bar { background: var(--teal); } .c-coral .card-accent-bar { background: var(--coral); } .c-blue .card-accent-bar { background: var(--blue); } .c-green .card-accent-bar { background: var(--green); }
+  .c-amber .big-temp { color: var(--amber); } .c-teal .big-temp { color: var(--teal); } .c-coral .big-temp { color: var(--coral); } .c-blue .big-temp { color: var(--blue); } .c-green .big-temp { color: var(--green); }
+  .grid-mid { display: grid; gap: 10px; grid-template-columns: 2fr 1fr; }
   @media (max-width: 900px) { .grid-mid { grid-template-columns: 1fr; } }
-
-  /* ── CHART CARD ── */
-  .chart-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-  }
-
-  .chart-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 14px;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
+  .chart-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; gap: 10px; flex-wrap: wrap; }
   .chart-title { font-size: 13px; font-weight: 600; }
-
-  .legend {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--muted);
-  }
-
-  .legend-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  /* ── IZONE PANEL ── */
-  .izone-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-  }
-
-  .izone-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-  }
-
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .izone-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .izone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .izone-title { font-size: 14px; font-weight: 600; }
-
-  .system-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  .status-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--muted);
-    flex-shrink: 0;
-  }
+  .system-status { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
   .status-dot.on  { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
   .status-dot.off { background: var(--muted); }
-
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-  /* Master controls */
-  .master-controls {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 12px;
-  }
-
-  .master-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    margin-bottom: 10px;
-  }
-
-  /* Mode buttons — on mobile go 3-up */
-  .mode-buttons {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 5px;
-    margin-bottom: 12px;
-  }
-
-  @media (max-width: 900px) {
-    /* izone panel is full-width on mobile — can keep 6 across */
-    .mode-buttons { grid-template-columns: repeat(6, 1fr); }
-  }
-
-  @media (max-width: 480px) {
-    .mode-buttons { grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  }
-
-  .mode-btn {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 8px 4px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
-    user-select: none;
-  }
-
+  .master-controls { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .master-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px; }
+  .mode-buttons { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-bottom: 12px; }
+  @media (max-width: 900px) { .mode-buttons { grid-template-columns: repeat(6, 1fr); } }
+  @media (max-width: 480px) { .mode-buttons { grid-template-columns: repeat(3, 1fr); gap: 6px; } }
+  .mode-btn { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 4px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; text-align: center; user-select: none; }
   .mode-btn:hover { border-color: var(--border-hi); color: var(--text); }
-  .mode-btn.active-cool  { border-color: var(--blue);  background: var(--blue-dim);  color: var(--blue); }
-  .mode-btn.active-heat  { border-color: var(--coral); background: var(--coral-dim); color: var(--coral); }
-  .mode-btn.active-auto  { border-color: var(--green); background: var(--green-dim); color: var(--green); }
-  .mode-btn.active-fan   { border-color: var(--teal);  background: var(--teal-dim);  color: var(--teal); }
-  .mode-btn.active-dry   { border-color: var(--amber); background: var(--amber-dim); color: var(--amber); }
-  .mode-btn.active-off   { border-color: var(--muted); background: rgba(107,112,128,0.15); color: var(--text); }
-
-  .setpoint-row {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--muted);
-  }
-
-  .fan-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 10px;
-  }
-
-  .fan-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    flex-shrink: 0;
-  }
-
-  .fan-btn {
-    flex: 1;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 6px 4px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
-    user-select: none;
-  }
-  .fan-btn:hover { border-color: var(--teal); color: var(--teal); }
-  .fan-btn.active { border-color: var(--teal); background: var(--teal-dim); color: var(--teal); }
-
-  /* ── ZONES LIST ── */
+  .mode-btn.active-cool  { border-color: var(--blue); background: var(--blue-dim); color: var(--blue); } .mode-btn.active-heat  { border-color: var(--coral); background: var(--coral-dim); color: var(--coral); } .mode-btn.active-auto  { border-color: var(--green); background: var(--green-dim); color: var(--green); } .mode-btn.active-fan   { border-color: var(--teal); background: var(--teal-dim); color: var(--teal); } .mode-btn.active-dry   { border-color: var(--amber); background: var(--amber-dim); color: var(--amber); } .mode-btn.active-off   { border-color: var(--muted); background: rgba(107,112,128,0.15); color: var(--text); }
+  .setpoint-row { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+  .fan-row { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+  .fan-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
+  .fan-btn { flex: 1; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 4px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; text-align: center; user-select: none; }
+  .fan-btn:hover { border-color: var(--teal); color: var(--teal); } .fan-btn.active { border-color: var(--teal); background: var(--teal-dim); color: var(--teal); }
   .zones-list { display: flex; flex-direction: column; gap: 7px; }
-
-  .zone-row {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    transition: border-color 0.15s;
-  }
-
+  .zone-row { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; transition: border-color 0.15s; }
   .zone-row:hover { border-color: var(--border-hi); }
-
-  /* Two-line layout: top = name + temp + badge, bottom = setpoint + toggle */
-  .zone-row-top {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-
-  .zone-row-bottom {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .zone-name {
-    font-size: 12px;
-    font-weight: 600;
-    flex: 1;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .zone-temp {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    color: var(--amber);
-    flex-shrink: 0;
-  }
-
-  .zone-state-badge {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    text-transform: uppercase;
-    padding: 2px 6px;
-    border-radius: 4px;
-    letter-spacing: 0.06em;
-    flex-shrink: 0;
-  }
-
-  .badge-hc  { background: var(--blue-dim);   color: var(--blue);   border: 1px solid rgba(96,160,240,0.3); }
-  .badge-off { background: rgba(107,112,128,0.1); color: var(--muted); border: 1px solid var(--border); }
-
-  /* Setpoint control */
-  .zone-setpoint {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 3px 6px;
-    flex-shrink: 0;
-  }
-
-  .sp-btn {
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 15px;
-    line-height: 1;
-    padding: 2px 4px;
-    transition: color 0.15s;
-    font-family: var(--font-mono);
-    user-select: none;
-    min-width: 24px;
-    text-align: center;
-  }
+  .zone-row-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .zone-row-bottom { display: flex; align-items: center; gap: 8px; }
+  .zone-name { font-size: 12px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .zone-temp { font-family: var(--font-mono); font-size: 13px; color: var(--amber); flex-shrink: 0; }
+  .zone-state-badge { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.06em; flex-shrink: 0; }
+  .badge-hc { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(96,160,240,0.3); } .badge-off { background: rgba(107,112,128,0.1); color: var(--muted); border: 1px solid var(--border); }
+  .zone-setpoint { display: flex; align-items: center; gap: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; flex-shrink: 0; }
+  .sp-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; transition: color 0.15s; font-family: var(--font-mono); user-select: none; min-width: 24px; text-align: center; }
   .sp-btn:hover, .sp-btn:active { color: var(--amber); }
-
-  .sp-val {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--amber);
-    min-width: 38px;
-    text-align: center;
-  }
-
-  /* Zone on/off toggle */
-  .zone-toggle {
-    display: flex;
-    gap: 5px;
-    margin-left: auto;
-    flex-shrink: 0;
-  }
-
-  .zt-btn {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 5px 10px;
-    border-radius: 5px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.15s;
-    user-select: none;
-  }
-
-  .zt-btn:hover { color: var(--text); border-color: var(--border-hi); }
-  .zt-btn.zone-on  { border-color: var(--green); background: var(--green-dim); color: var(--green); }
-  .zt-btn.zone-off { border-color: var(--muted); background: rgba(107,112,128,0.1); color: var(--muted); }
-
-  /* ── BOTTOM ROW ── */
-  .grid-bottom {
-    display: grid;
-    gap: 10px;
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  @media (max-width: 900px)  { .grid-bottom { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 480px)  { .grid-bottom { grid-template-columns: 1fr 1fr; gap: 8px; } }
-
-  /* ── HUMIDITY CARD ── */
-  .humidity-arc {
-    position: relative;
-    width: 80px; height: 80px;
-    margin: 6px auto 4px;
-  }
-
+  .sp-val { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--amber); min-width: 38px; text-align: center; }
+  .zone-toggle { display: flex; gap: 5px; margin-left: auto; flex-shrink: 0; }
+  .zt-btn { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none; }
+  .zt-btn:hover { color: var(--text); border-color: var(--border-hi); } .zt-btn.zone-on { border-color: var(--green); background: var(--green-dim); color: var(--green); } .zt-btn.zone-off { border-color: var(--muted); background: rgba(107,112,128,0.1); color: var(--muted); }
+  .grid-bottom { display: grid; gap: 10px; grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 900px) { .grid-bottom { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .grid-bottom { grid-template-columns: 1fr 1fr; gap: 8px; } }
+  .humidity-arc { position: relative; width: 80px; height: 80px; margin: 6px auto 4px; }
   .humidity-arc svg { width: 100%; height: 100%; }
-
-  .humidity-val {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: 600;
-    font-family: var(--font-mono);
-    color: var(--blue);
-  }
-
-  /* ── PRESETS ── */
-  .preset-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 7px;
-  }
-
-  .preset-btn {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 8px;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: left;
-    color: var(--text);
-    user-select: none;
-  }
-
-  .preset-btn:hover  { border-color: var(--amber); background: var(--amber-dim); }
-  .preset-btn:active { transform: scale(0.97); }
-
-  .preset-icon { font-size: 16px; margin-bottom: 3px; }
-  .preset-name { font-size: 11px; font-weight: 600; display: block; }
-  .preset-desc {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-top: 1px;
-  }
-
-  /* ── ROOF BAR ── */
-  .roof-bar {
-    margin-top: 8px;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--bg3);
-    overflow: hidden;
-  }
-
-  .roof-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.6s ease;
-  }
-
-  /* ── INLINE DATA ROWS ── */
-  .data-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 0;
-  }
-
+  .humidity-val { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; font-family: var(--font-mono); color: var(--blue); }
+  .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .preset-btn { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; cursor: pointer; transition: all 0.15s; text-align: left; color: var(--text); user-select: none; }
+  .preset-btn:hover { border-color: var(--amber); background: var(--amber-dim); } .preset-btn:active { transform: scale(0.97); }
+  .preset-icon { font-size: 16px; margin-bottom: 3px; } .preset-name { font-size: 11px; font-weight: 600; display: block; } .preset-desc { font-family: var(--font-mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 1px; }
+  .roof-bar { margin-top: 8px; height: 4px; border-radius: 2px; background: var(--bg3); overflow: hidden; }
+  .roof-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+  .data-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
   .data-row + .data-row { border-top: 1px solid var(--border); }
-
-  .data-label { font-size: 12px; color: var(--muted); }
-  .data-val   { font-family: var(--font-mono); font-size: 13px; color: var(--amber); }
-
-  /* ── TOAST ── */
-  .toast {
-    position: fixed;
-    bottom: max(24px, calc(16px + var(--safe-bottom)));
-    left: 50%;
-    transform: translateX(-50%) translateY(60px);
-    background: var(--bg3);
-    border: 1px solid var(--amber);
-    border-radius: 8px;
-    padding: 10px 18px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--amber);
-    z-index: 999;
-    opacity: 0;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-    pointer-events: none;
-  }
-
+  .data-label { font-size: 12px; color: var(--muted); } .data-val { font-family: var(--font-mono); font-size: 13px; color: var(--amber); }
+  .toast { position: fixed; bottom: max(24px, calc(16px + var(--safe-bottom))); left: 50%; transform: translateX(-50%) translateY(60px); background: var(--bg3); border: 1px solid var(--amber); border-radius: 8px; padding: 10px 18px; font-family: var(--font-mono); font-size: 12px; color: var(--amber); z-index: 999; opacity: 0; transition: all 0.3s ease; white-space: nowrap; pointer-events: none; }
   .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-  /* ── TOKEN OVERLAY ── */
-  .token-overlay {
-    position: fixed; inset: 0;
-    background: rgba(13,15,20,0.97);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    z-index: 9999; gap: 16px;
-    font-family: var(--font-mono);
-    padding: 24px;
-  }
-
-  .token-overlay input {
-    background: var(--bg3);
-    border: 1px solid rgba(255,255,255,0.14);
-    border-radius: 8px;
-    color: var(--text);
-    padding: 10px 14px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    width: min(360px, 100%);
-    outline: none;
-  }
-
-  .token-overlay button {
-    background: var(--amber);
-    color: var(--bg);
-    border: none;
-    border-radius: 8px;
-    padding: 10px 24px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  /* ── TAPPABLE TEMP CARDS ── */
-  .temp-card { cursor: pointer; transition: border-color 0.15s, transform 0.12s; }
-  .temp-card:hover  { border-color: var(--border-hi); }
-  .temp-card:active { transform: scale(0.98); }
-  .card-hint {
-    font-family: var(--font-mono); font-size: 9px; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.08em;
-    margin-top: 6px; opacity: 0.5; transition: opacity 0.15s;
-  }
+  .token-overlay { position: fixed; inset: 0; background: rgba(13,15,20,0.97); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; font-family: var(--font-mono); padding: 24px; }
+  .token-overlay input { background: var(--bg3); border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; color: var(--text); padding: 10px 14px; font-family: var(--font-mono); font-size: 12px; width: min(360px, 100%); outline: none; }
+  .token-overlay button { background: var(--amber); color: var(--bg); border: none; border-radius: 8px; padding: 10px 24px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; cursor: pointer; }
+  .temp-card { cursor: pointer; transition: border-color 0.15s, transform 0.12s; } .temp-card:hover { border-color: var(--border-hi); } .temp-card:active { transform: scale(0.98); }
+  .card-hint { font-family: var(--font-mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 6px; opacity: 0.5; transition: opacity 0.15s; }
   .temp-card:hover .card-hint { opacity: 1; }
-
-  /* ── 7-DAY STAT POPUP ── */
-  .stat-popup {
-    position: fixed; inset: 0;
-    background: rgba(7,9,13,0.82);
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    z-index: 600; display: flex; align-items: center; justify-content: center;
-    padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
-  }
+  .stat-popup { position: fixed; inset: 0; background: rgba(7,9,13,0.82); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 600; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
   .stat-popup.open { opacity: 1; pointer-events: all; }
-  .stat-popup-panel {
-    background: var(--bg2); border: 1px solid var(--border-hi);
-    border-radius: 16px; width: min(820px, 100%); max-height: min(540px, 90dvh);
-    display: flex; flex-direction: column; overflow: hidden;
-    transform: translateY(14px) scale(0.98); transition: transform 0.22s ease;
-  }
+  .stat-popup-panel { background: var(--bg2); border: 1px solid var(--border-hi); border-radius: 16px; width: min(820px, 100%); max-height: min(540px, 90dvh); display: flex; flex-direction: column; overflow: hidden; transform: translateY(14px) scale(0.98); transition: transform 0.22s ease; }
   .stat-popup.open .stat-popup-panel { transform: translateY(0) scale(1); }
-  .stat-popup-header {
-    display: flex; align-items: flex-start; justify-content: space-between;
-    padding: 18px 22px 14px; border-bottom: 1px solid var(--border);
-    flex-shrink: 0; gap: 12px;
-  }
+  .stat-popup-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 18px 22px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; gap: 12px; }
   .stat-popup-title { font-size: 18px; font-weight: 600; letter-spacing: -0.4px; }
-  .stat-popup-sub {
-    font-family: var(--font-mono); font-size: 10px; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px;
-  }
+  .stat-popup-sub { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
   .stat-popup-nav { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
-  .stat-nav-btn {
-    background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
-    color: var(--muted); font-size: 17px; width: 36px; height: 36px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all 0.12s; font-family: var(--font-mono);
-    -webkit-tap-highlight-color: transparent; user-select: none;
-  }
+  .stat-nav-btn { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 17px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.12s; font-family: var(--font-mono); -webkit-tap-highlight-color: transparent; user-select: none; }
   .stat-nav-btn:hover { color: var(--amber); border-color: var(--amber); }
-  .stat-close-btn {
-    background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
-    color: var(--muted); font-size: 13px; width: 36px; height: 36px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all 0.12s; -webkit-tap-highlight-color: transparent;
-  }
+  .stat-close-btn { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 13px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.12s; -webkit-tap-highlight-color: transparent; }
   .stat-close-btn:hover { color: var(--text); border-color: var(--border-hi); }
-  .stat-popup-dots {
-    display: flex; gap: 6px; justify-content: center; padding: 8px 0 0; flex-shrink: 0;
-  }
-  .stat-dot {
-    width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
-    opacity: 0.3; cursor: pointer; transition: opacity 0.15s, background 0.15s;
-  }
+  .stat-popup-dots { display: flex; gap: 6px; justify-content: center; padding: 8px 0 0; flex-shrink: 0; }
+  .stat-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); opacity: 0.3; cursor: pointer; transition: opacity 0.15s, background 0.15s; }
   .stat-dot.active { opacity: 1; }
   .stat-popup-body { flex: 1; padding: 12px 22px; min-height: 0; position: relative; }
   .stat-popup-body canvas { width: 100% !important; height: 100% !important; }
   .stat-popup-bar { display: flex; border-top: 1px solid var(--border); flex-shrink: 0; }
   .stat-cell { flex: 1; padding: 10px 16px; border-right: 1px solid var(--border); }
   .stat-cell:last-child { border-right: none; }
-  .stat-cell-label {
-    font-family: var(--font-mono); font-size: 9px; text-transform: uppercase;
-    letter-spacing: 0.1em; color: var(--muted); margin-bottom: 2px;
-  }
+  .stat-cell-label { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 2px; }
   .stat-cell-val { font-size: 15px; font-weight: 300; letter-spacing: -0.5px; }
-  @media (max-width: 480px) {
-    .stat-popup { padding: 0; align-items: flex-end; }
-    .stat-popup-panel { width: 100%; max-height: 78dvh; border-radius: 16px 16px 0 0; }
-    .stat-popup-header { padding: 14px 16px 10px; }
-    .stat-popup-body { padding: 10px 14px; }
-    .stat-cell { padding: 8px 10px; }
-    .stat-cell-val { font-size: 13px; }
-  }
+  @media (max-width: 480px) { .stat-popup { padding: 0; align-items: flex-end; } .stat-popup-panel { width: 100%; max-height: 78dvh; border-radius: 16px 16px 0 0; } .stat-popup-header { padding: 14px 16px 10px; } .stat-popup-body { padding: 10px 14px; } .stat-cell { padding: 8px 10px; } .stat-cell-val { font-size: 13px; } }
   @media (max-width: 700px) { .stat-popup-sub { display: none; } }
 </style>
 </head>
@@ -788,7 +227,10 @@
       <div class="sub" style="margin-top:2px">
         <span id="haStatus" style="color:var(--muted)">connecting…</span>
         &nbsp;·&nbsp;
-        <a href="file:///C:/Users/stuar/Downloads/climate_dashboard_2.html#" onclick="localStorage.removeItem(&#39;ha_climate_token&#39;);location.reload();return false;" style="color:var(--muted);text-decoration:none" onmouseover="this.style.color=&#39;var(--amber)&#39;" onmouseout="this.style.color=&#39;var(--muted)&#39;">reset token</a>
+        <a href="#" onclick="localStorage.removeItem('ha_climate_token');location.reload();return false;"
+           style="color:var(--muted);text-decoration:none"
+           onmouseover="this.style.color='var(--amber)'"
+           onmouseout="this.style.color='var(--muted)'">reset token</a>
       </div>
     </div>
     <div class="header-right">
@@ -811,7 +253,7 @@
   <div class="section-divider">Current temperatures</div>
   <div class="grid-top">
 
-    <div class="card temp-card c-amber" onclick="openStatPopup(&#39;outside&#39;)">
+    <div class="card temp-card c-amber" onclick="openStatPopup('outside')">
       <div class="card-accent-bar"></div>
       <div class="card-label">Outside</div>
       <div class="big-temp"><span class="val-outside">—</span><span class="unit">°</span></div>
@@ -819,7 +261,7 @@
       <div class="card-hint">↗ 7-day trend</div>
     </div>
 
-    <div class="card temp-card c-teal" onclick="openStatPopup(&#39;lounge&#39;)">
+    <div class="card temp-card c-teal" onclick="openStatPopup('lounge')">
       <div class="card-accent-bar"></div>
       <div class="card-label">Lounge</div>
       <div class="big-temp"><span class="val-lounge">—</span><span class="unit">°</span></div>
@@ -827,7 +269,7 @@
       <div class="card-hint">↗ 7-day trend</div>
     </div>
 
-    <div class="card temp-card c-blue" onclick="openStatPopup(&#39;study&#39;)">
+    <div class="card temp-card c-blue" onclick="openStatPopup('study')">
       <div class="card-accent-bar"></div>
       <div class="card-label">Study</div>
       <div class="big-temp"><span class="val-study">—</span><span class="unit">°</span></div>
@@ -835,7 +277,7 @@
       <div class="card-hint">↗ 7-day trend</div>
     </div>
 
-    <div class="card temp-card c-green" onclick="openStatPopup(&#39;kitchen&#39;)">
+    <div class="card temp-card c-green" onclick="openStatPopup('kitchen')">
       <div class="card-accent-bar"></div>
       <div class="card-label">Kitchen</div>
       <div class="big-temp"><span class="val-kitchen">—</span><span class="unit">°</span></div>
@@ -843,7 +285,7 @@
       <div class="card-hint">↗ 7-day trend</div>
     </div>
 
-    <div class="card temp-card c-coral" onclick="openStatPopup(&#39;roof&#39;)">
+    <div class="card temp-card c-coral" onclick="openStatPopup('roof')">
       <div class="card-accent-bar"></div>
       <div class="card-label">Roof cavity</div>
       <div class="big-temp"><span class="val-roof">—</span><span class="unit">°</span></div>
@@ -889,12 +331,12 @@
       <div class="master-controls">
         <div class="master-label">System mode</div>
         <div class="mode-buttons">
-          <button class="mode-btn active-off" id="btn-off" onclick="setMode(&#39;off&#39;)">Off</button>
-          <button class="mode-btn" id="btn-cool" onclick="setMode(&#39;cool&#39;)">Cool</button>
-          <button class="mode-btn" id="btn-heat" onclick="setMode(&#39;heat&#39;)">Heat</button>
-          <button class="mode-btn" id="btn-auto" onclick="setMode(&#39;heat_cool&#39;)">Auto</button>
-          <button class="mode-btn" id="btn-fan" onclick="setMode(&#39;fan_only&#39;)">Fan</button>
-          <button class="mode-btn" id="btn-dry" onclick="setMode(&#39;dry&#39;)">Dry</button>
+          <button class="mode-btn active-off" id="btn-off"  onclick="setMode('off')">Off</button>
+          <button class="mode-btn"            id="btn-cool" onclick="setMode('cool')">Cool</button>
+          <button class="mode-btn"            id="btn-heat" onclick="setMode('heat')">Heat</button>
+          <button class="mode-btn"            id="btn-auto" onclick="setMode('heat_cool')">Auto</button>
+          <button class="mode-btn"            id="btn-fan"  onclick="setMode('fan_only')">Fan</button>
+          <button class="mode-btn"            id="btn-dry"  onclick="setMode('dry')">Dry</button>
         </div>
 
         <div class="setpoint-row">
@@ -904,10 +346,10 @@
 
         <div class="fan-row">
           <span class="fan-label">Fan</span>
-          <button class="fan-btn active" id="fan-auto" onclick="setFan(&#39;auto&#39;)">Auto</button>
-          <button class="fan-btn" id="fan-low" onclick="setFan(&#39;low&#39;)">Low</button>
-          <button class="fan-btn" id="fan-medium" onclick="setFan(&#39;medium&#39;)">Med</button>
-          <button class="fan-btn" id="fan-high" onclick="setFan(&#39;high&#39;)">High</button>
+          <button class="fan-btn active" id="fan-auto"   onclick="setFan('auto')">Auto</button>
+          <button class="fan-btn"        id="fan-low"    onclick="setFan('low')">Low</button>
+          <button class="fan-btn"        id="fan-medium" onclick="setFan('medium')">Med</button>
+          <button class="fan-btn"        id="fan-high"   onclick="setFan('high')">High</button>
         </div>
       </div>
 
@@ -923,13 +365,13 @@
           </div>
           <div class="zone-row-bottom">
             <div class="zone-setpoint">
-              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;living&#39;,-0.5)">−</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint('living',-0.5)">−</button>
               <div class="sp-val" id="sp-living">22.5°</div>
-              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;living&#39;,0.5)">+</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint('living',0.5)">+</button>
             </div>
             <div class="zone-toggle">
-              <button class="zt-btn zone-on" id="zon-living-on" onclick="toggleZone(&#39;living&#39;,&#39;heat_cool&#39;)">On</button>
-              <button class="zt-btn" id="zon-living-off" onclick="toggleZone(&#39;living&#39;,&#39;off&#39;)">Off</button>
+              <button class="zt-btn zone-on" id="zon-living-on"  onclick="toggleZone('living','heat_cool')">On</button>
+              <button class="zt-btn"         id="zon-living-off" onclick="toggleZone('living','off')">Off</button>
             </div>
           </div>
         </div>
@@ -942,13 +384,13 @@
           </div>
           <div class="zone-row-bottom">
             <div class="zone-setpoint">
-              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;study&#39;,-0.5)">−</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint('study',-0.5)">−</button>
               <div class="sp-val" id="sp-study">22.5°</div>
-              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;study&#39;,0.5)">+</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint('study',0.5)">+</button>
             </div>
             <div class="zone-toggle">
-              <button class="zt-btn" id="zon-study-on" onclick="toggleZone(&#39;study&#39;,&#39;heat_cool&#39;)">On</button>
-              <button class="zt-btn zone-off" id="zon-study-off" onclick="toggleZone(&#39;study&#39;,&#39;off&#39;)">Off</button>
+              <button class="zt-btn"          id="zon-study-on"  onclick="toggleZone('study','heat_cool')">On</button>
+              <button class="zt-btn zone-off" id="zon-study-off" onclick="toggleZone('study','off')">Off</button>
             </div>
           </div>
         </div>
@@ -961,13 +403,13 @@
           </div>
           <div class="zone-row-bottom">
             <div class="zone-setpoint">
-              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;bedroom&#39;,-0.5)">−</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint('bedroom',-0.5)">−</button>
               <div class="sp-val" id="sp-bedroom">22.5°</div>
-              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;bedroom&#39;,0.5)">+</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint('bedroom',0.5)">+</button>
             </div>
             <div class="zone-toggle">
-              <button class="zt-btn" id="zon-bedroom-on" onclick="toggleZone(&#39;bedroom&#39;,&#39;heat_cool&#39;)">On</button>
-              <button class="zt-btn zone-off" id="zon-bedroom-off" onclick="toggleZone(&#39;bedroom&#39;,&#39;off&#39;)">Off</button>
+              <button class="zt-btn"          id="zon-bedroom-on"  onclick="toggleZone('bedroom','heat_cool')">On</button>
+              <button class="zt-btn zone-off" id="zon-bedroom-off" onclick="toggleZone('bedroom','off')">Off</button>
             </div>
           </div>
         </div>
@@ -980,13 +422,13 @@
           </div>
           <div class="zone-row-bottom">
             <div class="zone-setpoint">
-              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;dining&#39;,-0.5)">−</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint('dining',-0.5)">−</button>
               <div class="sp-val" id="sp-dining">22.5°</div>
-              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;dining&#39;,0.5)">+</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint('dining',0.5)">+</button>
             </div>
             <div class="zone-toggle">
-              <button class="zt-btn" id="zon-dining-on" onclick="toggleZone(&#39;dining&#39;,&#39;heat_cool&#39;)">On</button>
-              <button class="zt-btn zone-off" id="zon-dining-off" onclick="toggleZone(&#39;dining&#39;,&#39;off&#39;)">Off</button>
+              <button class="zt-btn"          id="zon-dining-on"  onclick="toggleZone('dining','heat_cool')">On</button>
+              <button class="zt-btn zone-off" id="zon-dining-off" onclick="toggleZone('dining','off')">Off</button>
             </div>
           </div>
         </div>
@@ -1024,22 +466,22 @@
     <div class="card">
       <div class="card-label">Scene presets</div>
       <div class="preset-grid">
-        <button class="preset-btn" onclick="applyPreset(&#39;away&#39;)">
+        <button class="preset-btn" onclick="applyPreset('away')">
           <div class="preset-icon">🏠</div>
           <span class="preset-name">Away</span>
           <span class="preset-desc">All off</span>
         </button>
-        <button class="preset-btn" onclick="applyPreset(&#39;sleep&#39;)">
+        <button class="preset-btn" onclick="applyPreset('sleep')">
           <div class="preset-icon">🌙</div>
           <span class="preset-name">Sleep</span>
           <span class="preset-desc">Bedroom · 22°</span>
         </button>
-        <button class="preset-btn" onclick="applyPreset(&#39;work&#39;)">
+        <button class="preset-btn" onclick="applyPreset('work')">
           <div class="preset-icon">💻</div>
           <span class="preset-name">Work day</span>
           <span class="preset-desc">Study · 22°</span>
         </button>
-        <button class="preset-btn" onclick="applyPreset(&#39;evening&#39;)">
+        <button class="preset-btn" onclick="applyPreset('evening')">
           <div class="preset-icon">🛋</div>
           <span class="preset-name">Evening</span>
           <span class="preset-desc">Living · 22°</span>
@@ -1051,8 +493,11 @@
       <div class="card-label">Kitchen humidity</div>
       <div class="humidity-arc">
         <svg viewBox="0 0 80 80">
-          <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(96,160,240,0.1)" stroke-width="6"></circle>
-          <circle cx="40" cy="40" r="32" fill="none" stroke="#60a0f0" stroke-width="6" stroke-dasharray="201.06" stroke-dashoffset="60.3" stroke-linecap="round" transform="rotate(-90 40 40)"></circle>
+          <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(96,160,240,0.1)" stroke-width="6"/>
+          <circle cx="40" cy="40" r="32" fill="none" stroke="#60a0f0" stroke-width="6"
+            stroke-dasharray="201.06" stroke-dashoffset="60.3"
+            stroke-linecap="round"
+            transform="rotate(-90 40 40)"/>
         </svg>
         <div class="humidity-val">—%</div>
       </div>
@@ -1121,11 +566,11 @@
     <div class="stat-popup-header">
       <div>
         <div class="stat-popup-title" id="statPopupTitle">—</div>
-        <div class="stat-popup-sub" id="statPopupSub">7-day hourly statistics · min / mean / max</div>
+        <div class="stat-popup-sub" id="statPopupSub">7-day statistics</div>
       </div>
       <div class="stat-popup-nav">
         <button class="stat-nav-btn" onclick="navigateStat(-1)" title="Previous">‹</button>
-        <button class="stat-nav-btn" onclick="navigateStat(1)" title="Next">›</button>
+        <button class="stat-nav-btn" onclick="navigateStat(1)"  title="Next">›</button>
         <button class="stat-close-btn" onclick="closeStat()">✕</button>
       </div>
     </div>
@@ -1151,6 +596,12 @@ const HA_URL = (() => {
 })();
 let HA_TOKEN = '';
 
+/*
+ * SECURITY NOTE: Exposing a long-lived access token in a client-side file can be a security risk.
+ * For local network use, the risk is lower, but it's best practice to use a backend proxy
+ * to handle API requests to Home Assistant securely.
+ */
+
 const ENTITIES = {
   controller: 'climate.izone_controller_000099968',
   living:     'climate.izone_living',
@@ -1164,32 +615,27 @@ const ENTITIES = {
   kitchenHum: 'sensor.temperature_and_humidity_alarm_humidity',
   roofTemp:   'sensor.thermometer_roof_temperature',
   weather:    'weather.forecast_home',
+  // Extra sensors for humidity chart
+  bathThermHum:   'sensor.thermometer_bathroom_humidity',
+  bathPresenceHum:'sensor.thermometer_and_presence_bathroom_humidity',
+  loungeHum:      'sensor.thermometer_and_presence_lounge_humidity',
+  outsideHum:     'sensor.thermometer_outside_humidity',
 };
 
 // ── TOKEN RESOLUTION ──
-// Priority: 1) ./token file  2) localStorage  3) manual overlay
+// Priority: 1) localStorage  2) manual overlay
 async function resolveToken() {
-  // 1. Try fetching a token file from the same folder
-  try {
-    const r = await fetch('./token', { cache: 'no-store' });
-    if (r.ok) {
-      const t = (await r.text()).trim();
-      if (t) { HA_TOKEN = t; return; }
-    }
-  } catch { /* file not present — fall through */ }
-
-  // 2. Try localStorage
+  // 1. Try localStorage
   const stored = localStorage.getItem('ha_climate_token');
   if (stored) { HA_TOKEN = stored; return; }
 
-  // 3. Show manual entry overlay
+  // 2. Show manual entry overlay
   const o = document.createElement('div');
   o.className = 'token-overlay';
   o.innerHTML = `
     <div style="color:var(--amber);font-size:16px;font-weight:500">Home Assistant token required</div>
     <div style="color:var(--muted);font-size:11px;max-width:340px;text-align:center;line-height:1.6">
-      Profile → Security → Long-Lived Access Tokens → Create Token<br><br>
-      Or place a <code style="color:var(--amber)">token</code> file in the same folder as this page.
+      Create a Long-Lived Access Token in your Home Assistant Profile page under "Security".
     </div>
     <input id="tokenInput" type="password" placeholder="Paste token here…"/>
     <button onclick="saveToken()">Connect</button>`;
@@ -1233,13 +679,27 @@ async function haGetState(entityId) {
 }
 
 async function haGetStates(ids) {
-  const results = await Promise.all(ids.map(haGetState));
+  const results = await Promise.all(ids.map(id => haGetState(id).catch(() => null)));
   const map = {};
   ids.forEach((id, i) => { if (results[i]) map[id] = results[i]; });
   return map;
 }
 
-// ── CLOCK ──
+async function haGetHistory(entityIds, hours = 24) {
+    const end = new Date();
+    const start = new Date(end.getTime() - hours * 3600 * 1000);
+    const url = `${HA_URL}/api/history/period/${start.toISOString()}?filter_entity_id=${entityIds.join(',')}&end_time=${end.toISOString()}`;
+    try {
+        const r = await fetch(url, { headers: { Authorization: `Bearer ${HA_TOKEN}` } });
+        if (!r.ok) throw new Error(r.status);
+        return await r.json();
+    } catch (e) {
+        showToast(`⚠ History error: ${e.message}`, 'var(--coral)');
+        return [];
+    }
+}
+
+// ── CLOCK & TOAST ──
 function updateClock() {
   const now = new Date();
   const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -1251,7 +711,6 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-// ── TOAST ──
 function showToast(msg, color) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -1262,18 +721,17 @@ function showToast(msg, color) {
   t._timer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// ── LOCAL STATE ──
+// ── LOCAL & UI STATE ──
 const zoneSetpoints = { living: 22.5, study: 22.5, bedroom: 22.5, dining: 22.5 };
+const sensorHistory = {}; // For rate-of-change
 let currentMode = 'off';
 let currentFan  = 'auto';
-
 const W_ICONS = { sunny:'☀️', 'clear-night':'🌙', partlycloudy:'⛅', cloudy:'☁️', fog:'🌫️', rainy:'🌧️', snowy:'❄️', lightning:'⛈️', windy:'💨', pouring:'🌧️', hail:'🌨️' };
 
-// ── APPLY STATE TO UI ──
 function applyControllerState(state) {
   if (!state) return;
-  const mode   = state.state;
-  const fan    = state.attributes.fan_mode || 'auto';
+  const mode = state.state;
+  const fan = state.attributes.fan_mode || 'auto';
   const supply = state.attributes.supply_temperature;
 
   const modeMap   = { off:'active-off', cool:'active-cool', heat:'active-heat', heat_cool:'active-auto', fan_only:'active-fan', dry:'active-dry' };
@@ -1296,14 +754,8 @@ function applyControllerState(state) {
 
 function applyZoneState(zone, state) {
   if (!state) return;
-  const s   = state.state;
-  const sp  = state.attributes.temperature;
-  const ct  = state.attributes.current_temperature;
-
-  const badge  = document.getElementById(`zone-${zone}-badge`);
-  const btnOn  = document.getElementById(`zon-${zone}-on`);
-  const btnOff = document.getElementById(`zon-${zone}-off`);
-  const spEl   = document.getElementById(`sp-${zone}`);
+  const s = state.state, sp = state.attributes.temperature, ct = state.attributes.current_temperature;
+  const badge = document.getElementById(`zone-${zone}-badge`), btnOn = document.getElementById(`zon-${zone}-on`), btnOff = document.getElementById(`zon-${zone}-off`), spEl = document.getElementById(`sp-${zone}`);
 
   if (s === 'off') {
     badge.className = 'zone-state-badge badge-off'; badge.textContent = 'off';
@@ -1317,13 +769,9 @@ function applyZoneState(zone, state) {
     zoneSetpoints[zone] = sp;
     if (spEl) spEl.textContent = sp.toFixed(1) + '°';
   }
-
-  // Update current temp in zone row header AND in bottom card
   if (ct != null) {
-    const ztEl = document.getElementById(`iz-${zone}-temp`);
-    if (ztEl) ztEl.textContent = ct.toFixed(1) + '°';
-    const ztElB = document.getElementById(`iz-${zone}-temp-b`);
-    if (ztElB) ztElB.textContent = ct.toFixed(1) + '°';
+    const ztEl = document.getElementById(`iz-${zone}-temp`); if (ztEl) ztEl.textContent = ct.toFixed(1) + '°';
+    const ztElB = document.getElementById(`iz-${zone}-temp-b`); if (ztElB) ztElB.textContent = ct.toFixed(1) + '°';
   }
 }
 
@@ -1332,14 +780,11 @@ function applySensorState(entityId, state) {
   const val = parseFloat(state.state);
   if (isNaN(val)) return;
   const elMap = {
-    'sensor.thermometer_outside_temperature':              '.val-outside',
-    'sensor.thermometer_and_presence_lounge_temperature': '.val-lounge',
-    'sensor.thermometer_study_temperature':               '.val-study',
-    'sensor.temperature_and_humidity_alarm_temperature':  '.val-kitchen',
-    'sensor.thermometer_roof_temperature':                '.val-roof',
+    [ENTITIES.outside]: '.val-outside', [ENTITIES.lounge]: '.val-lounge',
+    [ENTITIES.studyTemp]: '.val-study', [ENTITIES.kitchenTemp]: '.val-kitchen',
+    [ENTITIES.roofTemp]: '.val-roof',
   };
-  const sel = elMap[entityId];
-  if (sel) document.querySelectorAll(sel).forEach(el => el.textContent = val.toFixed(1));
+  if (elMap[entityId]) document.querySelectorAll(elMap[entityId]).forEach(el => el.textContent = val.toFixed(1));
 }
 
 function applyWeatherState(state) {
@@ -1366,83 +811,60 @@ function applyLiveDeltas(states) {
       if (!el || isNaN(val)) return;
       const d = val - outside;
       el.textContent = (d >= 0 ? '+' : '') + d.toFixed(1) + '°';
-      el.style.color = name === 'roof'
-        ? (d > 10 ? 'var(--coral)' : 'var(--amber)')
-        : (d > 0 ? 'var(--teal)' : 'var(--blue)');
+      el.style.color = name === 'roof' ? (d > 10 ? 'var(--coral)' : 'var(--amber)') : (d > 0 ? 'var(--teal)' : 'var(--blue)');
     });
 
   const roof = get(ENTITIES.roofTemp);
   if (!isNaN(roof)) {
     const diff = (roof - outside).toFixed(1);
-    const el = document.getElementById('trend-roof');
-    if (el) el.textContent = `⚠ ${diff}° above outside`;
-    const fill = document.getElementById('roof-bar-fill');
-    if (fill) fill.style.width = Math.min(100, ((roof - 15) / 25) * 100).toFixed(0) + '%';
+    document.getElementById('trend-roof').textContent = `⚠ ${diff}° above outside`;
+    document.getElementById('roof-bar-fill').style.width = `${Math.min(100, ((roof - 15) / 25) * 100)}%`;
   }
 }
 
-function applyTrends(states) {
-  const get = id => parseFloat(states[id]?.state);
-  const outside = get(ENTITIES.outside);
-  const lounge  = get(ENTITIES.lounge);
-  const study   = get(ENTITIES.studyTemp);
-  const kitchen = get(ENTITIES.kitchenTemp);
-
-  if (!isNaN(outside)) {
-    const el = document.getElementById('trend-outside');
-    if (el) { el.className='trend trend-dn'; el.textContent='↓ live from sensor'; }
-  }
-  if (!isNaN(lounge)) {
-    const el = document.getElementById('trend-lounge');
-    if (el) { el.className='trend trend-up'; el.textContent=`↑ ${lounge.toFixed(1)}°`; }
-  }
-  if (!isNaN(study)) {
-    const el = document.getElementById('trend-study');
-    if (el) { el.className='trend trend-dn'; el.textContent=`→ ${study.toFixed(1)}°`; }
-  }
-  if (!isNaN(kitchen)) {
-    const el = document.getElementById('trend-kitchen');
-    if (el) { el.className='trend trend-flat'; el.textContent='→ stable'; }
-  }
+function applyRateOfChange(states) {
+  const SENSOR_TREND_MAP = {
+    [ENTITIES.outside]: 'trend-outside', [ENTITIES.lounge]: 'trend-lounge',
+    [ENTITIES.studyTemp]: 'trend-study', [ENTITIES.kitchenTemp]: 'trend-kitchen',
+  };
+  Object.entries(SENSOR_TREND_MAP).forEach(([id, elId]) => {
+    const s = states[id];
+    if (!s || isNaN(parseFloat(s.state))) return;
+    const newVal = parseFloat(s.state), newTs = new Date(s.last_updated).getTime(), el = document.getElementById(elId);
+    if (!el) return;
+    const prev = sensorHistory[id];
+    if (prev && prev.timestamp < newTs) {
+      const diffH = (newTs - prev.timestamp) / 3600000;
+      const rate = diffH > 0 ? (newVal - prev.value) / diffH : 0, absR = Math.abs(rate);
+      if (absR < 0.05) { el.className = 'trend trend-flat'; el.textContent = '→ stable'; }
+      else if (rate > 0) { el.className = 'trend trend-up'; el.textContent = `↑ +${rate.toFixed(1)}°/h`; }
+      else { el.className = 'trend trend-dn'; el.textContent = `↓ ${rate.toFixed(1)}°/h`; }
+    } else if (!prev) { el.className = 'trend trend-flat'; el.textContent = '→ live'; }
+    sensorHistory[id] = { value: newVal, timestamp: newTs };
+  });
 }
 
-// ── FETCH ALL STATE ──
+// ── DATA FETCHING & UI UPDATES ──
 async function loadLiveState() {
   if (!HA_TOKEN) return;
-  const ids = [
-    ENTITIES.controller,
-    ENTITIES.living, ENTITIES.study, ENTITIES.bedroom, ENTITIES.dining,
-    ENTITIES.outside, ENTITIES.lounge, ENTITIES.studyTemp,
-    ENTITIES.kitchenTemp, ENTITIES.kitchenHum, ENTITIES.roofTemp,
-    ENTITIES.weather,
-  ];
+  const ids = Object.values(ENTITIES);
   const states = await haGetStates(ids);
+  if (Object.keys(states).length === 0) return;
 
   applyControllerState(states[ENTITIES.controller]);
-  applyZoneState('living',  states[ENTITIES.living]);
-  applyZoneState('study',   states[ENTITIES.study]);
-  applyZoneState('bedroom', states[ENTITIES.bedroom]);
-  applyZoneState('dining',  states[ENTITIES.dining]);
-
-  [ENTITIES.outside, ENTITIES.lounge, ENTITIES.studyTemp,
-   ENTITIES.kitchenTemp, ENTITIES.roofTemp].forEach(id => applySensorState(id, states[id]));
-
+  ['living', 'study', 'bedroom', 'dining'].forEach(z => applyZoneState(z, states[ENTITIES[z]]));
+  [ENTITIES.outside, ENTITIES.lounge, ENTITIES.studyTemp, ENTITIES.kitchenTemp, ENTITIES.roofTemp].forEach(id => applySensorState(id, states[id]));
   applyWeatherState(states[ENTITIES.weather]);
   applyLiveDeltas(states);
-  applyTrends(states);
+  applyRateOfChange(states);
 
-  // Humidity gauge
   const hum = states[ENTITIES.kitchenHum];
   if (hum) {
     const h = parseFloat(hum.state);
     if (!isNaN(h)) {
-      const offset = 201.06 * (1 - h / 100);
-      const arc = document.querySelector('.humidity-arc circle:last-child');
-      if (arc) arc.setAttribute('stroke-dashoffset', offset.toFixed(1));
-      const valEl = document.querySelector('.humidity-val');
-      if (valEl) valEl.textContent = Math.round(h) + '%';
-      const warn = document.querySelector('.humidity-warn');
-      if (warn) warn.textContent = h > 60 ? '⚠ slightly above ideal' : h < 40 ? '⚠ slightly dry' : '✓ comfortable';
+      document.querySelector('.humidity-arc circle:last-child').setAttribute('stroke-dashoffset', 201.06 * (1 - h / 100));
+      document.querySelector('.humidity-val').textContent = `${Math.round(h)}%`;
+      document.querySelector('.humidity-warn').textContent = h > 60 ? '⚠ slightly above ideal' : h < 40 ? '⚠ slightly dry' : '✓ comfortable';
     }
   }
 }
@@ -1450,442 +872,230 @@ async function loadLiveState() {
 // ── INIT ──
 (async () => {
   await resolveToken();
-
-  // Connection status check
   const el = document.getElementById('haStatus');
   try {
     const r = await fetch(`${HA_URL}/api/`, { headers: { Authorization: `Bearer ${HA_TOKEN}` } });
     if (r.ok) { el.textContent = '● connected to HA'; el.style.color = 'var(--green)'; }
-    else       { el.textContent = '⚠ auth failed — check token'; el.style.color = 'var(--coral)'; }
+    else { el.textContent = '⚠ auth failed — check token'; el.style.color = 'var(--coral)'; }
   } catch { el.textContent = '⚠ cannot reach HA'; el.style.color = 'var(--coral)'; }
 
   loadLiveState();
   setInterval(loadLiveState, 30000);
-  updateHumidityChart();
-  setInterval(updateHumidityChart, 30000);
+  initCharts();
 })();
 
-// ── SETPOINTS ──
+// ── UI ACTIONS: SETPOINTS, MODE, FAN, ZONES, PRESETS ──
 async function adjustZoneSetpoint(zone, delta) {
   const prevSp = zoneSetpoints[zone];
-  zoneSetpoints[zone] = Math.round((zoneSetpoints[zone] + delta) * 2) / 2;
-  zoneSetpoints[zone] = Math.min(26, Math.max(16, zoneSetpoints[zone]));
+  zoneSetpoints[zone] = Math.min(26, Math.max(16, Math.round((zoneSetpoints[zone] + delta) * 2) / 2));
   const sp = zoneSetpoints[zone];
   document.getElementById(`sp-${zone}`).textContent = sp.toFixed(1) + '°';
-
-  const label = zone.charAt(0).toUpperCase() + zone.slice(1);
   const ok = await haCall('climate.set_temperature', { entity_id: ENTITIES[zone], temperature: sp });
-  if (ok) {
-    showToast(`${label} → ${sp.toFixed(1)}°C`);
-  } else {
-    zoneSetpoints[zone] = prevSp;
-    document.getElementById(`sp-${zone}`).textContent = prevSp.toFixed(1) + '°';
-  }
+  if (ok) showToast(`${zone.charAt(0).toUpperCase() + zone.slice(1)} → ${sp.toFixed(1)}°C`);
+  else { zoneSetpoints[zone] = prevSp; document.getElementById(`sp-${zone}`).textContent = prevSp.toFixed(1) + '°'; }
 }
 
-// ── MODE ──
-const modeMap   = { off:'active-off', cool:'active-cool', heat:'active-heat', heat_cool:'active-auto', fan_only:'active-fan', dry:'active-dry' };
-const modeBtnId = { off:'btn-off', cool:'btn-cool', heat:'btn-heat', heat_cool:'btn-auto', fan_only:'btn-fan', dry:'btn-dry' };
-
 async function setMode(mode) {
+  const modeMap   = { off:'active-off', cool:'active-cool', heat:'active-heat', heat_cool:'active-auto', fan_only:'active-fan', dry:'active-dry' };
+  const modeBtnId = { off:'btn-off', cool:'btn-cool', heat:'btn-heat', heat_cool:'btn-auto', fan_only:'btn-fan', dry:'btn-dry' };
   Object.values(modeBtnId).forEach(id => { document.getElementById(id).className = 'mode-btn'; });
   document.getElementById(modeBtnId[mode]).classList.add(modeMap[mode]);
   currentMode = mode;
-  const dot = document.getElementById('sysDot');
-  const lbl = document.getElementById('sysLabel');
+  const dot = document.getElementById('sysDot'), lbl = document.getElementById('sysLabel');
   if (mode === 'off') { dot.className='status-dot off'; lbl.textContent='off'; lbl.style.color='var(--muted)'; }
   else { dot.className='status-dot on'; lbl.textContent=mode.replace(/_/g,' '); lbl.style.color='var(--green)'; }
-
   const labels = {off:'Off',cool:'Cooling',heat:'Heating',heat_cool:'Auto',fan_only:'Fan only',dry:'Dry'};
   const ok = await haCall('climate.set_hvac_mode', { entity_id: ENTITIES.controller, hvac_mode: mode });
-  if (ok) {
-    showToast(`Mode → ${labels[mode]}`);
-  } else {
-    await loadLiveState();
-  }
+  if (ok) showToast(`Mode → ${labels[mode]}`); else await loadLiveState();
 }
 
-// ── FAN ──
 async function setFan(speed) {
   ['auto','low','medium','high'].forEach(s => document.getElementById(`fan-${s}`).classList.remove('active'));
   document.getElementById(`fan-${speed}`).classList.add('active');
   currentFan = speed;
   const ok = await haCall('climate.set_fan_mode', { entity_id: ENTITIES.controller, fan_mode: speed });
-  if (ok) showToast(`Fan → ${speed}`);
-  else    await loadLiveState();
+  if (ok) showToast(`Fan → ${speed}`); else await loadLiveState();
 }
 
-// ── ZONES ──
 async function toggleZone(zone, targetState) {
-  const badge  = document.getElementById(`zone-${zone}-badge`);
-  const btnOn  = document.getElementById(`zon-${zone}-on`);
-  const btnOff = document.getElementById(`zon-${zone}-off`);
-
+  const badge = document.getElementById(`zone-${zone}-badge`), btnOn = document.getElementById(`zon-${zone}-on`), btnOff = document.getElementById(`zon-${zone}-off`);
   const wasOn = btnOn.classList.contains('zone-on');
-
-  if (targetState === 'off') {
-    badge.className = 'zone-state-badge badge-off'; badge.textContent = 'off';
-    btnOn.classList.remove('zone-on'); btnOff.classList.add('zone-off');
-  } else {
-    badge.className = 'zone-state-badge badge-hc'; badge.textContent = targetState;
-    btnOn.classList.add('zone-on'); btnOff.classList.remove('zone-off');
-  }
-
-  const label = zone.charAt(0).toUpperCase() + zone.slice(1);
+  if (targetState === 'off') { badge.className='zone-state-badge badge-off'; badge.textContent='off'; btnOn.classList.remove('zone-on'); btnOff.classList.add('zone-off'); }
+  else { badge.className='zone-state-badge badge-hc'; badge.textContent=targetState; btnOn.classList.add('zone-on'); btnOff.classList.remove('zone-off'); }
   const ok = await haCall('climate.set_hvac_mode', { entity_id: ENTITIES[zone], hvac_mode: targetState });
-  if (ok) {
-    showToast(`${label} → ${targetState === 'off' ? 'Off' : 'On'}`);
-  } else {
-    // Revert
-    if (wasOn) {
-      badge.className='zone-state-badge badge-hc'; badge.textContent='heat_cool';
-      btnOn.classList.add('zone-on'); btnOff.classList.remove('zone-off');
-    } else {
-      badge.className='zone-state-badge badge-off'; badge.textContent='off';
-      btnOn.classList.remove('zone-on'); btnOff.classList.add('zone-off');
-    }
+  if (ok) showToast(`${zone.charAt(0).toUpperCase() + zone.slice(1)} → ${targetState === 'off' ? 'Off' : 'On'}`);
+  else {
+    if (wasOn) { badge.className='zone-state-badge badge-hc'; badge.textContent='heat_cool'; btnOn.classList.add('zone-on'); btnOff.classList.remove('zone-off'); }
+    else { badge.className='zone-state-badge badge-off'; badge.textContent='off'; btnOn.classList.remove('zone-on'); btnOff.classList.add('zone-off'); }
   }
 }
 
-// ── PRESETS ──
 async function applyPreset(preset) {
-  const presets = {
-    away:    { mode:'off',       zones:{living:'off',study:'off',bedroom:'off',dining:'off'},                 desc:'Away — all zones off' },
-    sleep:   { mode:'heat_cool', zones:{living:'off',study:'off',bedroom:'heat_cool',dining:'off'},           temps:{bedroom:22}, desc:'Sleep — bedroom at 22°' },
-    work:    { mode:'heat_cool', zones:{living:'off',study:'heat_cool',bedroom:'off',dining:'off'},           temps:{study:22}, desc:'Work day — study at 22°' },
-    evening: { mode:'heat_cool', zones:{living:'heat_cool',study:'off',bedroom:'off',dining:'heat_cool'},     temps:{living:22,dining:22}, desc:'Evening — living & dining at 22°' },
+  const pMap = {
+    away:    { mode:'off', zones:{living:'off',study:'off',bedroom:'off',dining:'off'}, desc:'Away — all zones off' },
+    sleep:   { mode:'heat_cool', zones:{living:'off',study:'off',bedroom:'heat_cool',dining:'off'}, temps:{bedroom:22}, desc:'Sleep — bedroom at 22°' },
+    work:    { mode:'heat_cool', zones:{living:'off',study:'heat_cool',bedroom:'off',dining:'off'}, temps:{study:22}, desc:'Work day — study at 22°' },
+    evening: { mode:'heat_cool', zones:{living:'heat_cool',study:'off',bedroom:'off',dining:'heat_cool'}, temps:{living:22,dining:22}, desc:'Evening — living & dining at 22°' },
   };
-  const p = presets[preset];
-  if (!p) return;
+  const p = pMap[preset]; if (!p) return;
   showToast(`Applying preset: ${p.desc}…`);
-
   const calls = [
     haCall('climate.set_hvac_mode', { entity_id: ENTITIES.controller, hvac_mode: p.mode }),
-    ...Object.entries(p.zones).map(([z, state]) =>
-      haCall('climate.set_hvac_mode', { entity_id: ENTITIES[z], hvac_mode: state })
-    ),
-    ...(p.temps ? Object.entries(p.temps).map(([z, t]) =>
-      haCall('climate.set_temperature', { entity_id: ENTITIES[z], temperature: t })
-    ) : []),
+    ...Object.entries(p.zones).map(([z, s]) => haCall('climate.set_hvac_mode', { entity_id: ENTITIES[z], hvac_mode: s })),
+    ...(p.temps ? Object.entries(p.temps).map(([z, t]) => haCall('climate.set_temperature', { entity_id: ENTITIES[z], temperature: t })) : []),
   ];
-  const results = await Promise.all(calls);
+  await Promise.all(calls);
+  setTimeout(loadLiveState, 2000); // Re-sync state after a delay
+  showToast(`✓ ${p.desc}`, 'var(--green)');
+}
 
-  // Update UI
-  await setMode(p.mode);
-  Object.entries(p.zones).forEach(([z, state]) => {
-    const badge  = document.getElementById(`zone-${z}-badge`);
-    const btnOn  = document.getElementById(`zon-${z}-on`);
-    const btnOff = document.getElementById(`zon-${z}-off`);
-    if (state === 'off') {
-      badge.className='zone-state-badge badge-off'; badge.textContent='off';
-      btnOn.classList.remove('zone-on'); btnOff.classList.add('zone-off');
-    } else {
-      badge.className='zone-state-badge badge-hc'; badge.textContent=state;
-      btnOn.classList.add('zone-on'); btnOff.classList.remove('zone-off');
-    }
-  });
-  if (p.temps) {
-    Object.entries(p.temps).forEach(([z, t]) => {
-      zoneSetpoints[z] = t;
-      document.getElementById(`sp-${z}`).textContent = t.toFixed(1) + '°';
+
+// ══════════════════════════════════════════════
+// CHARTS
+// ══════════════════════════════════════════════
+let tempChart, humidityChart;
+
+function processHistory(data, entityId) {
+    const entityHistory = Array.isArray(data) ? data.find(h => h.length > 0 && h[0].entity_id === entityId) : [];
+    if (!entityHistory) return [];
+
+    const isClimate = entityId.startsWith('climate.');
+
+    return entityHistory.map(d => {
+        let value = isClimate ? d.attributes.current_temperature : d.state;
+        return {
+            x: new Date(d.last_updated).getTime(),
+            y: parseFloat(value)
+        };
+    }).filter(d => !isNaN(d.y));
+}
+
+
+async function initCharts() {
+    const commonOptions = {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(255,255,255,0.3)', font: { family: "'DM Mono', monospace", size: 10 }, maxTicksLimit: 8 } },
+            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(255,255,255,0.3)', font: { family: "'DM Mono', monospace", size: 10 } } }
+        }
+    };
+
+    // --- Temperature Chart ---
+    const tempEntities = [ENTITIES.outside, ENTITIES.lounge, ENTITIES.studyTemp, ENTITIES.roofTemp, ENTITIES.living];
+    const tempHistory = await haGetHistory(tempEntities);
+
+    tempChart = new Chart(document.getElementById('tempChart'), {
+        type: 'line',
+        data: {
+            datasets: [
+                { label: 'Outside', data: processHistory(tempHistory, ENTITIES.outside), borderColor: '#f0a020', tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
+                { label: 'Lounge', data: processHistory(tempHistory, ENTITIES.lounge), borderColor: '#2dd4bf', tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
+                { label: 'Study', data: processHistory(tempHistory, ENTITIES.studyTemp), borderColor: '#60a0f0', tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
+                { label: 'Roof', data: processHistory(tempHistory, ENTITIES.roofTemp), borderColor: '#f06050', tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
+                { label: 'Living iZ', data: processHistory(tempHistory, ENTITIES.living), borderColor: '#a78bfa', tension: 0.4, borderWidth: 1.5, pointRadius: 0, borderDash: [4, 3] }
+            ]
+        },
+        options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, ticks: { ...commonOptions.scales.y.ticks, callback: v => v + '°' } } } }
     });
-  }
 
-  const allOk = results.every(Boolean);
-  showToast(allOk ? `✓ ${p.desc}` : `⚠ Some preset calls failed`, allOk ? 'var(--green)' : 'var(--coral)');
-  if (!allOk) setTimeout(loadLiveState, 500);
+    // --- Humidity Chart ---
+    const humEntities = [ENTITIES.kitchenHum, ENTITIES.bathThermHum, ENTITIES.bathPresenceHum, ENTITIES.loungeHum, ENTITIES.outsideHum];
+    const humHistory = await haGetHistory(humEntities);
+
+    humidityChart = new Chart(document.getElementById('humidityChart'), {
+        type: 'line',
+        data: {
+            datasets: [
+                { label: 'Kitchen', data: processHistory(humHistory, ENTITIES.kitchenHum), borderColor: '#60a0f0', tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
+                { label: 'Bathroom (therm)', data: processHistory(humHistory, ENTITIES.bathThermHum), borderColor: '#a78bfa', tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
+                { label: 'Bathroom (presence)', data: processHistory(humHistory, ENTITIES.bathPresenceHum), borderColor: '#f06050', tension: 0.4, borderWidth: 1.5, pointRadius: 0, borderDash: [3, 2] },
+                { label: 'Lounge', data: processHistory(humHistory, ENTITIES.loungeHum), borderColor: '#2dd4bf', tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
+                { label: 'Outside', data: processHistory(humHistory, ENTITIES.outsideHum), borderColor: '#f0a020', tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
+            ]
+        },
+        options: { ...commonOptions, scales: { ...commonOptions.scales, y: { min: 30, max: 100, ...commonOptions.scales.y, ticks: { ...commonOptions.scales.y.ticks, callback: v => v + '%' } } } }
+    });
 }
-
-// ── CHART ──
-const outside = [
-  {t:'20:00',v:16.3},{t:'21:00',v:16.7},{t:'22:00',v:17.5},{t:'23:00',v:19.3},
-  {t:'00:00',v:19.9},{t:'01:00',v:20.4},{t:'02:00',v:20.5},{t:'03:00',v:20.7},
-  {t:'04:00',v:21.1},{t:'05:00',v:20.9},{t:'06:00',v:21.0},{t:'07:00',v:20.8},
-  {t:'08:00',v:20.6},{t:'09:00',v:20.2},{t:'10:00',v:19.8}
-];
-const lounge = [
-  {t:'20:00',v:20.2},{t:'21:00',v:20.2},{t:'22:00',v:19.9},{t:'23:00',v:19.7},
-  {t:'00:00',v:19.9},{t:'01:00',v:20.3},{t:'02:00',v:20.7},{t:'03:00',v:21.1},
-  {t:'04:00',v:21.3},{t:'05:00',v:21.5},{t:'06:00',v:21.6},{t:'07:00',v:21.7},
-  {t:'08:00',v:21.8},{t:'09:00',v:21.8},{t:'10:00',v:21.8}
-];
-const study = [
-  {t:'20:00',v:21.2},{t:'21:00',v:21.2},{t:'22:00',v:21.4},{t:'23:00',v:21.4},
-  {t:'00:00',v:21.5},{t:'01:00',v:21.8},{t:'02:00',v:21.9},{t:'03:00',v:22.1},
-  {t:'04:00',v:22.5},{t:'05:00',v:22.6},{t:'06:00',v:22.7},{t:'07:00',v:22.7},
-  {t:'08:00',v:22.7},{t:'09:00',v:22.7},{t:'10:00',v:22.6}
-];
-const roof = [
-  {t:'20:00',v:16.4},{t:'21:00',v:17.2},{t:'22:00',v:18.2},{t:'23:00',v:21.6},
-  {t:'00:00',v:23.4},{t:'01:00',v:26.2},{t:'02:00',v:28.8},{t:'03:00',v:29.0},
-  {t:'04:00',v:33.9},{t:'05:00',v:33.3},{t:'06:00',v:33.3},{t:'07:00',v:33.3},
-  {t:'08:00',v:33.3},{t:'09:00',v:33.3},{t:'10:00',v:33.3}
-];
-const izone = [
-  {t:'20:00',v:20.5},{t:'21:00',v:20.3},{t:'22:00',v:20.1},{t:'23:00',v:19.8},
-  {t:'00:00',v:20.0},{t:'01:00',v:20.4},{t:'02:00',v:20.8},{t:'03:00',v:21.3},
-  {t:'04:00',v:21.6},{t:'05:00',v:21.8},{t:'06:00',v:22.0},{t:'07:00',v:22.0},
-  {t:'08:00',v:22.1},{t:'09:00',v:22.0},{t:'10:00',v:22.0}
-];
-
-const chartLabels = outside.map(d => d.t);
-const ctx = document.getElementById('tempChart').getContext('2d');
-new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels: chartLabels,
-    datasets: [
-      { label:'Outside',   data:outside.map(d=>d.v), borderColor:'#f0a020', backgroundColor:'rgba(240,160,32,0.06)', tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-      { label:'Lounge',    data:lounge.map(d=>d.v),  borderColor:'#2dd4bf', backgroundColor:'rgba(45,212,191,0.06)',  tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-      { label:'Study',     data:study.map(d=>d.v),   borderColor:'#60a0f0', backgroundColor:'rgba(96,160,240,0.06)',  tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-      { label:'Roof',      data:roof.map(d=>d.v),    borderColor:'#f06050', backgroundColor:'rgba(240,96,80,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-      { label:'Living iZ', data:izone.map(d=>d.v),   borderColor:'#a78bfa', backgroundColor:'rgba(167,139,250,0.06)', tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4, borderDash:[4,3] },
-    ]
-  },
-  options: {
-    responsive: true,
-    interaction: { mode:'index', intersect:false },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor:'#1a1e2a', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
-        titleFont:{ family:"'DM Mono', monospace", size:11 },
-        bodyFont: { family:"'DM Mono', monospace", size:11 },
-        titleColor:'rgba(255,255,255,0.5)', bodyColor:'#e8eaf0',
-        callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}°C` }
-      }
-    },
-    scales: {
-      x: {
-        grid: { color:'rgba(255,255,255,0.04)' },
-        ticks: { color:'rgba(255,255,255,0.3)', font:{family:"'DM Mono', monospace",size:10}, maxTicksLimit: 8 }
-      },
-      y: {
-        min:14, max:36,
-        grid: { color:'rgba(255,255,255,0.04)' },
-        ticks: { color:'rgba(255,255,255,0.3)', font:{family:"'DM Mono', monospace",size:10}, callback: v => v+'°' }
-      }
-    }
-  }
-});
-
-// ── HUMIDITY CHART ──
-// Real 24h history data from HA (UTC timestamps converted to AEST = UTC+11)
-// Sensor entity IDs used:
-//   Kitchen:            sensor.temperature_and_humidity_alarm_humidity
-//   Bathroom (therm):   sensor.thermometer_bathroom_humidity
-//   Bathroom (presence):sensor.thermometer_and_presence_bathroom_humidity
-//   Lounge:             sensor.thermometer_and_presence_lounge_humidity
-//   Outside:            sensor.thermometer_outside_humidity
-
-// Helper: convert UTC ISO string → AEST HH:MM label (UTC+11 on 28 Mar 2026)
-function toAEST(utcStr) {
-  const d = new Date(utcStr);
-  d.setHours(d.getHours() + 11);
-  return d.toISOString().substring(11, 16);
-}
-
-// ── REAL HISTORY (sampled from HA, ~hourly resolution) ──
-// Each point is { x: 'HH:MM', y: value }
-const humKitchen = [
-  {x:'08:44',y:66.6},{x:'08:53',y:66.1},{x:'09:00',y:65.5},{x:'09:08',y:64.9},
-  {x:'09:14',y:64.3},{x:'09:29',y:65.4},{x:'09:35',y:64.8},{x:'09:44',y:65.3},
-  {x:'10:04',y:65.9},{x:'10:18',y:66.1},{x:'10:34',y:66.7},{x:'10:37',y:67.3},
-  {x:'10:39',y:68.5},{x:'10:41',y:69.2},{x:'10:43',y:69.7},{x:'10:49',y:68.6},
-  {x:'11:15',y:68.6},{x:'11:21',y:68.1},{x:'11:35',y:68.7},{x:'11:41',y:69.3},
-  {x:'11:58',y:69.0},{x:'12:02',y:69.6},{x:'12:13',y:69.0},{x:'12:18',y:68.3},
-  {x:'12:42',y:67.2},{x:'12:58',y:66.6},{x:'13:17',y:66.1},{x:'13:31',y:65.5},
-  {x:'13:41',y:64.9},{x:'14:13',y:64.4},{x:'14:21',y:65.0},{x:'14:29',y:64.4},
-  {x:'14:31',y:63.9},{x:'14:36',y:63.3},{x:'14:39',y:62.8},{x:'14:46',y:62.2},
-  {x:'14:55',y:61.6},{x:'15:08',y:61.1},{x:'15:36',y:60.6},{x:'15:53',y:61.2},
-  {x:'16:10',y:60.2},{x:'16:16',y:59.6},{x:'16:28',y:59.7},
-].filter((p,i) => i === 0 || i % 3 === 0); // thin to ~hourly
-
-const humBathTherm = [
-  {x:'08:44',y:73},{x:'09:08',y:72},{x:'09:52',y:80},{x:'09:55',y:83},
-  {x:'09:56',y:86},{x:'10:10',y:83},{x:'10:21',y:82},{x:'10:35',y:78},
-  {x:'10:51',y:77},{x:'11:46',y:76},{x:'13:35',y:74},{x:'14:34',y:71},
-  {x:'15:29',y:69},{x:'15:46',y:72},{x:'15:55',y:76},{x:'16:56',y:72},
-  {x:'17:29',y:73},{x:'17:59',y:70},{x:'17:01',y:76},{x:'17:05',y:70},
-  {x:'17:29',y:67},{x:'18:24',y:68},{x:'19:19',y:69},{x:'20:14',y:70},
-  {x:'22:04',y:71},{x:'23:53',y:72},{x:'01:43',y:73},{x:'03:33',y:74},
-  {x:'07:06',y:75},{x:'07:57',y:79},{x:'07:58',y:83},{x:'08:00',y:87},
-  {x:'08:01',y:89},{x:'08:02',y:86},{x:'08:04',y:85},{x:'08:20',y:82},
-];
-
-const humBathPresence = [
-  {x:'08:44',y:72},{x:'08:57',y:71},{x:'09:52',y:72},{x:'10:21',y:75},
-  {x:'10:50',y:74},{x:'13:35',y:75},{x:'13:48',y:77},{x:'13:53',y:76},
-  {x:'14:39',y:72},{x:'16:03',y:75},{x:'16:26',y:72},{x:'16:59',y:70},
-  {x:'17:25',y:69},{x:'17:33',y:73},{x:'17:33',y:70},{x:'17:59',y:69},
-  {x:'19:02',y:70},{x:'19:56',y:71},{x:'21:46',y:72},{x:'01:26',y:73},
-  {x:'08:21',y:74},
-];
-
-const humLounge = [
-  {x:'08:44',y:69},{x:'08:54',y:68},{x:'09:05',y:67},{x:'09:11',y:66},
-  {x:'09:20',y:65},{x:'09:36',y:66},{x:'09:48',y:65},{x:'10:15',y:66},
-  {x:'10:39',y:65},{x:'10:48',y:66},{x:'11:06',y:67},{x:'11:31',y:68},
-  {x:'11:51',y:69},{x:'12:12',y:70},{x:'12:31',y:71},{x:'13:26',y:72},
-  {x:'14:39',y:71},
-];
-
-const humOutside = [
-  {x:'08:44',y:99},{x:'14:44',y:97},{x:'15:11',y:99},{x:'15:25',y:97},
-  {x:'16:08',y:94},{x:'16:48',y:93},{x:'17:08',y:92},{x:'17:50',y:89},
-  {x:'18:05',y:87},{x:'18:22',y:90},{x:'18:47',y:91},{x:'19:09',y:93},
-  {x:'19:17',y:96},{x:'19:36',y:94},{x:'19:58',y:97},{x:'20:00',y:99},
-];
-
-const humCtx = document.getElementById('humidityChart').getContext('2d');
-const humidityChart = new Chart(humCtx, {
-  type: 'line',
-  data: {
-    datasets: [
-      { label:'Kitchen',            data:humKitchen,     borderColor:'#60a0f0', backgroundColor:'rgba(96,160,240,0.06)',  tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-      { label:'Bathroom (therm)',   data:humBathTherm,   borderColor:'#a78bfa', backgroundColor:'rgba(167,139,250,0.06)', tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-      { label:'Bathroom (presence)',data:humBathPresence,borderColor:'#f06050', backgroundColor:'rgba(240,96,80,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4, borderDash:[3,2] },
-      { label:'Lounge',             data:humLounge,      borderColor:'#2dd4bf', backgroundColor:'rgba(45,212,191,0.06)',  tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-      { label:'Outside',            data:humOutside,     borderColor:'#f0a020', backgroundColor:'rgba(240,160,32,0.06)',  tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-    ]
-  },
-  options: {
-    responsive: true,
-    interaction: { mode:'index', intersect:false },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor:'#1a1e2a', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
-        titleFont:{ family:"'DM Mono', monospace", size:11 },
-        bodyFont: { family:"'DM Mono', monospace", size:11 },
-        titleColor:'rgba(255,255,255,0.5)', bodyColor:'#e8eaf0',
-        callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%` }
-      },
-      annotation: {
-        // comfort band shaded region — requires chartjs-plugin-annotation
-        // omitted for simplicity; green label in header used instead
-      }
-    },
-    scales: {
-      x: {
-        type: 'category',
-        grid: { color:'rgba(255,255,255,0.04)' },
-        ticks: { color:'rgba(255,255,255,0.3)', font:{family:"'DM Mono', monospace",size:10}, maxTicksLimit:10, maxRotation:0 }
-      },
-      y: {
-        min: 30, max: 100,
-        grid: { color:'rgba(255,255,255,0.04)' },
-        ticks: { color:'rgba(255,255,255,0.3)', font:{family:"'DM Mono', monospace",size:10}, callback: v => v+'%' }
-      }
-    }
-  }
-});
-
-// ── LIVE HUMIDITY UPDATE ──
-// Appends the current live reading to each dataset on each poll
-const HUMIDITY_ENTITIES = {
-  kitchen:     'sensor.temperature_and_humidity_alarm_humidity',
-  bathTherm:   'sensor.thermometer_bathroom_humidity',
-  bathPresence:'sensor.thermometer_and_presence_bathroom_humidity',
-  lounge:      'sensor.thermometer_and_presence_lounge_humidity',
-  outside:     'sensor.thermometer_outside_humidity',
-};
-
-async function updateHumidityChart() {
-  if (!HA_TOKEN) return;
-  const ids = Object.values(HUMIDITY_ENTITIES);
-  const states = await haGetStates(ids);
-
-  const now = new Date();
-  const label = now.toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', hour12:false });
-
-  const liveVals = [
-    parseFloat(states[HUMIDITY_ENTITIES.kitchen]?.state),
-    parseFloat(states[HUMIDITY_ENTITIES.bathTherm]?.state),
-    parseFloat(states[HUMIDITY_ENTITIES.bathPresence]?.state),
-    parseFloat(states[HUMIDITY_ENTITIES.lounge]?.state),
-    parseFloat(states[HUMIDITY_ENTITIES.outside]?.state),
-  ];
-
-  // Append live point to each dataset if valid
-  liveVals.forEach((val, i) => {
-    if (!isNaN(val)) {
-      const ds = humidityChart.data.datasets[i];
-      // Avoid duplicate labels
-      const lastPt = ds.data[ds.data.length - 1];
-      if (!lastPt || lastPt.x !== label) {
-        ds.data.push({ x: label, y: val });
-        // Keep last 48 points max
-        if (ds.data.length > 48) ds.data.shift();
-      }
-    }
-  });
-
-  humidityChart.update('none'); // no animation for live updates
-}
-
 
 // ══════════════════════════════════════════════
 // 7-DAY STAT POPUP
 // ══════════════════════════════════════════════
-
-// Convert epoch ms (UTC) to AEST label — UTC+11 on 29 Mar 2026
-function epochToAEST(ms) {
-  const d = new Date(ms + 11 * 3600 * 1000);
-  const day = d.getUTCDay();
-  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const h = String(d.getUTCHours()).padStart(2,'0');
-  return `${days[day]} ${h}:00`;
-}
-
-// Thin to every Nth sample for readability
-function thinStats(arr, step) {
-  return arr.filter((_,i) => i % step === 0);
-}
-
-// ── RAW 7-DAY HOURLY STATS from HA (epoch ms UTC, mean/min/max) ──
-const RAW_STATS = {
-  outside: [{"s":1774166400000,"m":25.80,"lo":25.4,"hi":26.2},{"s":1774170000000,"m":24.95,"lo":24.1,"hi":25.4},{"s":1774173600000,"m":23.20,"lo":22.5,"hi":24.1},{"s":1774177200000,"m":22.24,"lo":22.1,"hi":22.5},{"s":1774180800000,"m":21.85,"lo":21.6,"hi":22.1},{"s":1774184400000,"m":21.25,"lo":21.0,"hi":21.6},{"s":1774188000000,"m":20.83,"lo":20.8,"hi":21.0},{"s":1774191600000,"m":20.61,"lo":20.5,"hi":20.8},{"s":1774195200000,"m":20.17,"lo":20.1,"hi":20.5},{"s":1774198800000,"m":19.91,"lo":19.9,"hi":20.1},{"s":1774202400000,"m":19.90,"lo":19.9,"hi":19.9},{"s":1774206000000,"m":19.61,"lo":19.5,"hi":19.9},{"s":1774209600000,"m":19.33,"lo":19.3,"hi":19.5},{"s":1774213200000,"m":19.49,"lo":19.3,"hi":19.9},{"s":1774216800000,"m":20.60,"lo":19.9,"hi":21.1},{"s":1774220400000,"m":21.72,"lo":21.1,"hi":22.2},{"s":1774224000000,"m":22.53,"lo":22.2,"hi":22.6},{"s":1774227600000,"m":23.36,"lo":22.6,"hi":24.0},{"s":1774231200000,"m":24.23,"lo":24.0,"hi":24.4},{"s":1774234800000,"m":24.63,"lo":24.4,"hi":25.0},{"s":1774238400000,"m":25.15,"lo":25.0,"hi":25.4},{"s":1774242000000,"m":25.92,"lo":25.4,"hi":26.1},{"s":1774245600000,"m":25.53,"lo":25.3,"hi":26.1},{"s":1774249200000,"m":25.45,"lo":25.3,"hi":25.5},{"s":1774252800000,"m":25.39,"lo":25.1,"hi":25.5},{"s":1774256400000,"m":24.85,"lo":24.5,"hi":25.1},{"s":1774260000000,"m":24.13,"lo":23.7,"hi":24.5},{"s":1774263600000,"m":23.43,"lo":23.0,"hi":23.7},{"s":1774267200000,"m":22.56,"lo":22.2,"hi":23.0},{"s":1774270800000,"m":21.79,"lo":21.6,"hi":22.2},{"s":1774274400000,"m":21.32,"lo":21.0,"hi":21.6},{"s":1774278000000,"m":20.94,"lo":20.8,"hi":21.0},{"s":1774281600000,"m":20.77,"lo":20.7,"hi":20.8},{"s":1774285200000,"m":20.48,"lo":20.3,"hi":20.7},{"s":1774288800000,"m":20.20,"lo":20.1,"hi":20.3},{"s":1774292400000,"m":20.03,"lo":19.9,"hi":20.1},{"s":1774296000000,"m":19.92,"lo":19.9,"hi":20.0},{"s":1774299600000,"m":20.35,"lo":20.0,"hi":20.8},{"s":1774303200000,"m":21.36,"lo":20.8,"hi":22.0},{"s":1774306800000,"m":22.46,"lo":22.0,"hi":23.0},{"s":1774310400000,"m":23.73,"lo":23.0,"hi":24.8},{"s":1774314000000,"m":25.59,"lo":24.8,"hi":26.4},{"s":1774317600000,"m":26.21,"lo":25.8,"hi":26.4},{"s":1774321200000,"m":25.32,"lo":24.6,"hi":25.8},{"s":1774324800000,"m":24.16,"lo":23.9,"hi":24.6},{"s":1774328400000,"m":23.31,"lo":22.9,"hi":23.9},{"s":1774332000000,"m":22.74,"lo":22.3,"hi":22.9},{"s":1774335600000,"m":21.92,"lo":21.7,"hi":22.3},{"s":1774339200000,"m":21.53,"lo":21.5,"hi":21.7},{"s":1774342800000,"m":21.29,"lo":21.0,"hi":21.5},{"s":1774346400000,"m":20.97,"lo":20.8,"hi":21.0},{"s":1774350000000,"m":20.76,"lo":20.6,"hi":20.8},{"s":1774353600000,"m":20.46,"lo":20.2,"hi":20.6},{"s":1774357200000,"m":20.12,"lo":20.0,"hi":20.2},{"s":1774360800000,"m":19.96,"lo":19.9,"hi":20.0},{"s":1774364400000,"m":19.73,"lo":19.7,"hi":19.9},{"s":1774368000000,"m":19.70,"lo":19.7,"hi":19.7},{"s":1774371600000,"m":19.61,"lo":19.4,"hi":19.7},{"s":1774375200000,"m":19.40,"lo":19.3,"hi":19.4},{"s":1774378800000,"m":19.30,"lo":19.3,"hi":19.3},{"s":1774382400000,"m":19.32,"lo":19.3,"hi":19.5},{"s":1774386000000,"m":19.70,"lo":19.5,"hi":20.1},{"s":1774389600000,"m":20.58,"lo":20.1,"hi":21.1},{"s":1774393200000,"m":22.18,"lo":21.1,"hi":23.5},{"s":1774396800000,"m":24.41,"lo":23.5,"hi":25.4},{"s":1774400400000,"m":25.89,"lo":25.4,"hi":26.0},{"s":1774404000000,"m":26.27,"lo":26.0,"hi":26.6},{"s":1774407600000,"m":25.99,"lo":25.0,"hi":26.8},{"s":1774411200000,"m":24.93,"lo":24.8,"hi":25.1},{"s":1774414800000,"m":25.19,"lo":25.1,"hi":25.4},{"s":1774418400000,"m":24.96,"lo":24.2,"hi":25.4},{"s":1774422000000,"m":23.32,"lo":22.4,"hi":24.2},{"s":1774425600000,"m":21.69,"lo":21.2,"hi":22.4},{"s":1774429200000,"m":20.91,"lo":20.8,"hi":21.2},{"s":1774432800000,"m":20.70,"lo":20.6,"hi":20.8},{"s":1774436400000,"m":20.53,"lo":20.3,"hi":20.6},{"s":1774440000000,"m":20.09,"lo":19.7,"hi":20.3},{"s":1774443600000,"m":19.52,"lo":19.5,"hi":19.7},{"s":1774447200000,"m":19.62,"lo":19.5,"hi":19.7},{"s":1774450800000,"m":19.50,"lo":19.3,"hi":19.6},{"s":1774454400000,"m":18.92,"lo":18.7,"hi":19.3},{"s":1774458000000,"m":18.43,"lo":18.3,"hi":18.7},{"s":1774461600000,"m":18.51,"lo":18.5,"hi":18.6},{"s":1774465200000,"m":18.42,"lo":18.1,"hi":18.5},{"s":1774468800000,"m":18.03,"lo":17.9,"hi":18.1},{"s":1774472400000,"m":18.00,"lo":18.0,"hi":18.0},{"s":1774476000000,"m":18.25,"lo":18.0,"hi":18.6},{"s":1774479600000,"m":19.26,"lo":18.6,"hi":19.7},{"s":1774483200000,"m":19.99,"lo":19.7,"hi":20.1},{"s":1774486800000,"m":19.57,"lo":18.5,"hi":20.1},{"s":1774490400000,"m":17.46,"lo":16.6,"hi":18.5},{"s":1774494000000,"m":16.07,"lo":15.3,"hi":16.6},{"s":1774497600000,"m":15.61,"lo":15.3,"hi":15.7},{"s":1774501200000,"m":15.14,"lo":14.6,"hi":15.6},{"s":1774504800000,"m":14.12,"lo":13.8,"hi":14.6},{"s":1774508400000,"m":13.76,"lo":13.6,"hi":13.8},{"s":1774512000000,"m":13.71,"lo":13.6,"hi":13.9},{"s":1774515600000,"m":13.69,"lo":13.5,"hi":13.9},{"s":1774519200000,"m":13.48,"lo":13.3,"hi":13.9},{"s":1774522800000,"m":14.14,"lo":13.9,"hi":14.4},{"s":1774526400000,"m":14.40,"lo":13.9,"hi":14.6},{"s":1774530000000,"m":13.92,"lo":13.6,"hi":14.1},{"s":1774533600000,"m":13.51,"lo":13.4,"hi":13.8},{"s":1774537200000,"m":13.70,"lo":13.6,"hi":13.9},{"s":1774540800000,"m":13.77,"lo":13.6,"hi":14.0},{"s":1774544400000,"m":14.05,"lo":13.8,"hi":14.4},{"s":1774548000000,"m":14.51,"lo":14.4,"hi":14.6},{"s":1774551600000,"m":14.44,"lo":14.3,"hi":14.5},{"s":1774555200000,"m":14.22,"lo":14.2,"hi":14.3},{"s":1774558800000,"m":14.60,"lo":14.2,"hi":14.9},{"s":1774562400000,"m":15.61,"lo":14.9,"hi":16.3},{"s":1774566000000,"m":16.77,"lo":16.3,"hi":17.1},{"s":1774569600000,"m":16.76,"lo":16.7,"hi":16.9},{"s":1774573200000,"m":17.12,"lo":16.7,"hi":17.3},{"s":1774576800000,"m":17.13,"lo":16.9,"hi":17.3},{"s":1774580400000,"m":16.71,"lo":16.2,"hi":17.1},{"s":1774584000000,"m":16.31,"lo":16.2,"hi":16.6},{"s":1774587600000,"m":16.77,"lo":16.6,"hi":17.0},{"s":1774591200000,"m":16.59,"lo":16.4,"hi":16.8},{"s":1774594800000,"m":16.21,"lo":16.0,"hi":16.4},{"s":1774598400000,"m":15.78,"lo":15.7,"hi":16.0},{"s":1774602000000,"m":15.59,"lo":15.5,"hi":15.7},{"s":1774605600000,"m":15.41,"lo":15.3,"hi":15.5},{"s":1774609200000,"m":15.10,"lo":15.0,"hi":15.3},{"s":1774612800000,"m":15.19,"lo":15.0,"hi":15.3},{"s":1774616400000,"m":15.05,"lo":14.8,"hi":15.2},{"s":1774620000000,"m":14.86,"lo":14.7,"hi":15.0},{"s":1774623600000,"m":14.62,"lo":14.5,"hi":14.7},{"s":1774627200000,"m":14.50,"lo":14.5,"hi":14.5},{"s":1774630800000,"m":14.47,"lo":14.4,"hi":14.6},{"s":1774634400000,"m":14.69,"lo":14.6,"hi":14.8},{"s":1774638000000,"m":14.51,"lo":14.4,"hi":14.6},{"s":1774641600000,"m":14.36,"lo":14.3,"hi":14.4},{"s":1774645200000,"m":14.51,"lo":14.3,"hi":14.9},{"s":1774648800000,"m":15.29,"lo":14.9,"hi":15.7},{"s":1774652400000,"m":16.19,"lo":15.7,"hi":16.7},{"s":1774656000000,"m":17.32,"lo":16.7,"hi":17.7},{"s":1774659600000,"m":18.38,"lo":17.7,"hi":18.7},{"s":1774663200000,"m":18.86,"lo":18.5,"hi":19.1},{"s":1774666800000,"m":19.25,"lo":19.1,"hi":19.3},{"s":1774670400000,"m":19.31,"lo":19.1,"hi":19.5},{"s":1774674000000,"m":19.15,"lo":19.0,"hi":19.2},{"s":1774677600000,"m":18.69,"lo":18.5,"hi":19.0},{"s":1774681200000,"m":18.34,"lo":18.2,"hi":18.5},{"s":1774684800000,"m":17.95,"lo":17.8,"hi":18.2},{"s":1774688400000,"m":17.57,"lo":17.4,"hi":17.8},{"s":1774692000000,"m":17.40,"lo":17.2,"hi":17.4},{"s":1774695600000,"m":17.20,"lo":17.2,"hi":17.2},{"s":1774699200000,"m":17.20,"lo":17.1,"hi":17.2},{"s":1774702800000,"m":16.94,"lo":16.9,"hi":17.1},{"s":1774706400000,"m":16.82,"lo":16.8,"hi":16.9},{"s":1774710000000,"m":16.80,"lo":16.8,"hi":16.8},{"s":1774713600000,"m":16.61,"lo":16.6,"hi":16.8},{"s":1774717200000,"m":16.70,"lo":16.6,"hi":16.7},{"s":1774720800000,"m":16.52,"lo":16.4,"hi":16.7},{"s":1774724400000,"m":16.36,"lo":16.3,"hi":16.4},{"s":1774728000000,"m":16.30,"lo":16.3,"hi":16.3},{"s":1774731600000,"m":16.41,"lo":16.3,"hi":16.7},{"s":1774735200000,"m":17.22,"lo":16.7,"hi":17.9},{"s":1774738800000,"m":17.99,"lo":17.9,"hi":18.1},{"s":1774742400000,"m":18.13,"lo":17.9,"hi":18.6},{"s":1774746000000,"m":19.19,"lo":18.6,"hi":19.6},{"s":1774749600000,"m":19.88,"lo":19.6,"hi":20.0},{"s":1774753200000,"m":19.80,"lo":19.7,"hi":20.0},{"s":1774756800000,"m":19.87,"lo":19.8,"hi":19.9},{"s":1774760400000,"m":19.76,"lo":19.6,"hi":19.9},{"s":1774764000000,"m":19.44,"lo":19.3,"hi":19.6}],
-  lounge: [{"s":1774166400000,"m":23.30,"lo":23.3,"hi":23.3},{"s":1774170000000,"m":23.30,"lo":23.3,"hi":23.3},{"s":1774173600000,"m":23.41,"lo":23.3,"hi":23.6},{"s":1774177200000,"m":23.56,"lo":23.5,"hi":23.6},{"s":1774180800000,"m":23.45,"lo":23.4,"hi":23.5},{"s":1774184400000,"m":23.22,"lo":23.2,"hi":23.4},{"s":1774188000000,"m":23.10,"lo":23.1,"hi":23.2},{"s":1774191600000,"m":23.02,"lo":22.8,"hi":23.1},{"s":1774195200000,"m":22.77,"lo":22.7,"hi":22.8},{"s":1774198800000,"m":22.59,"lo":22.5,"hi":22.7},{"s":1774202400000,"m":22.44,"lo":22.4,"hi":22.5},{"s":1774206000000,"m":22.24,"lo":22.2,"hi":22.4},{"s":1774209600000,"m":22.11,"lo":22.1,"hi":22.2},{"s":1774213200000,"m":21.90,"lo":21.8,"hi":22.1},{"s":1774216800000,"m":21.80,"lo":21.8,"hi":21.8},{"s":1774220400000,"m":21.80,"lo":21.8,"hi":21.8},{"s":1774224000000,"m":21.93,"lo":21.8,"hi":22.1},{"s":1774227600000,"m":22.27,"lo":22.1,"hi":22.5},{"s":1774231200000,"m":22.75,"lo":22.5,"hi":23.1},{"s":1774234800000,"m":23.49,"lo":23.1,"hi":23.7},{"s":1774238400000,"m":23.70,"lo":23.7,"hi":23.7},{"s":1774242000000,"m":23.85,"lo":23.7,"hi":24.1},{"s":1774245600000,"m":24.11,"lo":24.1,"hi":24.2},{"s":1774249200000,"m":24.20,"lo":24.2,"hi":24.2},{"s":1774252800000,"m":24.20,"lo":24.2,"hi":24.2},{"s":1774256400000,"m":24.36,"lo":24.2,"hi":24.4},{"s":1774260000000,"m":24.31,"lo":24.3,"hi":24.4},{"s":1774263600000,"m":24.20,"lo":24.1,"hi":24.3},{"s":1774267200000,"m":24.10,"lo":24.1,"hi":24.1},{"s":1774270800000,"m":23.97,"lo":23.9,"hi":24.1},{"s":1774274400000,"m":23.78,"lo":23.6,"hi":23.9},{"s":1774278000000,"m":23.53,"lo":23.4,"hi":23.6},{"s":1774281600000,"m":23.36,"lo":23.3,"hi":23.4},{"s":1774285200000,"m":23.14,"lo":23.1,"hi":23.3},{"s":1774288800000,"m":22.98,"lo":22.8,"hi":23.1},{"s":1774292400000,"m":22.78,"lo":22.7,"hi":22.8},{"s":1774296000000,"m":22.61,"lo":22.5,"hi":22.7},{"s":1774299600000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774303200000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774306800000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774310400000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774314000000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774317600000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774321200000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774324800000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774328400000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774332000000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774335600000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774339200000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774342800000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774346400000,"m":23.14,"lo":22.5,"hi":23.5},{"s":1774350000000,"m":23.50,"lo":23.5,"hi":23.5},{"s":1774353600000,"m":23.29,"lo":23.1,"hi":23.5},{"s":1774357200000,"m":23.01,"lo":22.9,"hi":23.1},{"s":1774360800000,"m":22.78,"lo":22.7,"hi":22.9},{"s":1774364400000,"m":22.61,"lo":22.4,"hi":22.7},{"s":1774368000000,"m":22.38,"lo":22.3,"hi":22.4},{"s":1774371600000,"m":22.23,"lo":22.1,"hi":22.3},{"s":1774375200000,"m":22.06,"lo":22.0,"hi":22.1},{"s":1774378800000,"m":21.95,"lo":21.9,"hi":22.0},{"s":1774382400000,"m":21.90,"lo":21.9,"hi":21.9},{"s":1774386000000,"m":21.71,"lo":21.7,"hi":21.9},{"s":1774389600000,"m":21.69,"lo":21.6,"hi":21.7},{"s":1774393200000,"m":21.67,"lo":21.6,"hi":21.8},{"s":1774396800000,"m":22.05,"lo":21.8,"hi":22.4},{"s":1774400400000,"m":22.63,"lo":22.4,"hi":22.8},{"s":1774404000000,"m":23.06,"lo":22.8,"hi":23.2},{"s":1774407600000,"m":23.39,"lo":23.2,"hi":23.4},{"s":1774411200000,"m":23.32,"lo":23.3,"hi":23.4},{"s":1774414800000,"m":23.52,"lo":23.4,"hi":23.6},{"s":1774418400000,"m":23.67,"lo":23.6,"hi":23.7},{"s":1774422000000,"m":23.69,"lo":23.5,"hi":23.7},{"s":1774425600000,"m":23.49,"lo":23.4,"hi":23.5},{"s":1774429200000,"m":23.40,"lo":23.4,"hi":23.4},{"s":1774432800000,"m":23.28,"lo":23.2,"hi":23.4},{"s":1774436400000,"m":23.20,"lo":23.2,"hi":23.2},{"s":1774440000000,"m":23.20,"lo":23.2,"hi":23.2},{"s":1774443600000,"m":23.08,"lo":22.9,"hi":23.2},{"s":1774447200000,"m":22.88,"lo":22.8,"hi":22.9},{"s":1774450800000,"m":22.69,"lo":22.6,"hi":22.8},{"s":1774454400000,"m":22.54,"lo":22.5,"hi":22.6},{"s":1774458000000,"m":22.35,"lo":22.3,"hi":22.5},{"s":1774461600000,"m":22.18,"lo":22.0,"hi":22.3},{"s":1774465200000,"m":21.97,"lo":21.9,"hi":22.0},{"s":1774468800000,"m":21.87,"lo":21.8,"hi":21.9},{"s":1774472400000,"m":21.76,"lo":21.7,"hi":21.8},{"s":1774476000000,"m":21.60,"lo":21.5,"hi":21.7},{"s":1774479600000,"m":21.50,"lo":21.5,"hi":21.5},{"s":1774483200000,"m":21.63,"lo":21.5,"hi":21.7},{"s":1774486800000,"m":21.70,"lo":21.7,"hi":21.7},{"s":1774490400000,"m":21.70,"lo":21.7,"hi":21.7},{"s":1774494000000,"m":21.61,"lo":21.6,"hi":21.7},{"s":1774497600000,"m":21.41,"lo":21.3,"hi":21.6},{"s":1774501200000,"m":21.25,"lo":21.2,"hi":21.3},{"s":1774504800000,"m":21.10,"lo":20.9,"hi":21.2},{"s":1774508400000,"m":20.87,"lo":20.8,"hi":20.9},{"s":1774512000000,"m":20.80,"lo":20.6,"hi":21.8},{"s":1774515600000,"m":21.99,"lo":21.6,"hi":22.6},{"s":1774519200000,"m":21.28,"lo":20.8,"hi":22.0},{"s":1774522800000,"m":20.43,"lo":20.2,"hi":20.8},{"s":1774526400000,"m":19.91,"lo":19.6,"hi":20.2},{"s":1774530000000,"m":19.47,"lo":19.2,"hi":19.6},{"s":1774533600000,"m":19.14,"lo":19.0,"hi":19.2},{"s":1774537200000,"m":18.89,"lo":18.8,"hi":19.0},{"s":1774540800000,"m":18.74,"lo":18.7,"hi":18.8},{"s":1774544400000,"m":18.52,"lo":18.5,"hi":18.7},{"s":1774548000000,"m":18.37,"lo":18.2,"hi":18.5},{"s":1774551600000,"m":18.18,"lo":18.1,"hi":18.2},{"s":1774555200000,"m":17.98,"lo":17.7,"hi":18.1},{"s":1774558800000,"m":19.05,"lo":17.7,"hi":21.3},{"s":1774562400000,"m":22.00,"lo":21.3,"hi":22.5},{"s":1774566000000,"m":21.96,"lo":21.7,"hi":22.3},{"s":1774569600000,"m":21.46,"lo":20.7,"hi":22.1},{"s":1774573200000,"m":20.15,"lo":19.9,"hi":20.7},{"s":1774576800000,"m":19.64,"lo":19.5,"hi":19.9},{"s":1774580400000,"m":19.38,"lo":19.3,"hi":19.5},{"s":1774584000000,"m":19.30,"lo":19.3,"hi":19.3},{"s":1774587600000,"m":19.30,"lo":19.3,"hi":19.3},{"s":1774591200000,"m":19.38,"lo":19.3,"hi":19.4},{"s":1774594800000,"m":19.31,"lo":19.2,"hi":19.4},{"s":1774598400000,"m":19.19,"lo":19.1,"hi":19.2},{"s":1774602000000,"m":19.08,"lo":19.0,"hi":19.1},{"s":1774605600000,"m":18.92,"lo":18.8,"hi":19.0},{"s":1774609200000,"m":18.80,"lo":18.8,"hi":18.8},{"s":1774612800000,"m":18.80,"lo":18.8,"hi":18.8},{"s":1774616400000,"m":18.83,"lo":18.7,"hi":18.9},{"s":1774620000000,"m":18.63,"lo":18.5,"hi":18.7},{"s":1774623600000,"m":18.46,"lo":18.4,"hi":18.5},{"s":1774627200000,"m":18.40,"lo":18.4,"hi":18.4},{"s":1774630800000,"m":18.24,"lo":18.2,"hi":18.4},{"s":1774634400000,"m":18.20,"lo":18.2,"hi":18.2},{"s":1774638000000,"m":18.36,"lo":18.2,"hi":18.4},{"s":1774641600000,"m":18.20,"lo":18.2,"hi":18.2},{"s":1774645200000,"m":19.60,"lo":18.2,"hi":21.4},{"s":1774648800000,"m":21.94,"lo":21.4,"hi":22.4},{"s":1774652400000,"m":22.02,"lo":21.6,"hi":22.4},{"s":1774656000000,"m":21.33,"lo":20.6,"hi":22.2},{"s":1774659600000,"m":20.15,"lo":20.0,"hi":20.6},{"s":1774663200000,"m":19.94,"lo":19.9,"hi":20.0},{"s":1774666800000,"m":20.11,"lo":19.9,"hi":20.5},{"s":1774670400000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774674000000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774677600000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774681200000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774684800000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774688400000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774692000000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774695600000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774699200000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774702800000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774706400000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774710000000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774713600000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774717200000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774720800000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774724400000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774728000000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774731600000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774735200000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774738800000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774742400000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774746000000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774749600000,"m":20.21,"lo":20.1,"hi":20.5},{"s":1774753200000,"m":20.30,"lo":20.3,"hi":20.3},{"s":1774756800000,"m":20.30,"lo":20.3,"hi":20.3},{"s":1774760400000,"m":20.30,"lo":20.3,"hi":20.3},{"s":1774764000000,"m":20.30,"lo":20.3,"hi":20.3}],
-  study: [{"s":1774166400000,"m":23.50,"lo":23.5,"hi":23.5},{"s":1774209600000,"m":22.86,"lo":22.8,"hi":22.9},{"s":1774252800000,"m":24.90,"lo":24.9,"hi":24.9},{"s":1774296000000,"m":23.71,"lo":23.6,"hi":23.8},{"s":1774339200000,"m":24.35,"lo":24.3,"hi":24.4},{"s":1774382400000,"m":23.09,"lo":22.9,"hi":23.1},{"s":1774425600000,"m":24.49,"lo":24.4,"hi":24.5},{"s":1774468800000,"m":23.17,"lo":23.1,"hi":23.2},{"s":1774512000000,"m":21.84,"lo":21.8,"hi":22.0},{"s":1774555200000,"m":19.72,"lo":19.5,"hi":19.9},{"s":1774598400000,"m":20.62,"lo":20.4,"hi":20.7},{"s":1774641600000,"m":19.40,"lo":19.4,"hi":19.5},{"s":1774684800000,"m":21.16,"lo":21.1,"hi":21.2},{"s":1774727600000,"m":20.35,"lo":20.3,"hi":20.4},{"s":1774760400000,"m":21.30,"lo":21.3,"hi":21.3},{"s":1774764000000,"m":21.30,"lo":21.3,"hi":21.3}],
-  kitchen: [{"s":1774166400000,"m":21.81,"lo":21.7,"hi":22.0},{"s":1774209600000,"m":20.23,"lo":20.2,"hi":20.3},{"s":1774252800000,"m":23.23,"lo":23.1,"hi":23.5},{"s":1774296000000,"m":21.09,"lo":21.0,"hi":21.2},{"s":1774339200000,"m":22.08,"lo":22.0,"hi":22.2},{"s":1774382400000,"m":20.30,"lo":20.3,"hi":20.3},{"s":1774425600000,"m":22.31,"lo":22.3,"hi":22.4},{"s":1774468800000,"m":20.64,"lo":20.5,"hi":21.9},{"s":1774512000000,"m":19.96,"lo":19.8,"hi":20.4},{"s":1774555200000,"m":17.63,"lo":17.2,"hi":17.8},{"s":1774598400000,"m":19.09,"lo":18.9,"hi":19.2},{"s":1774641600000,"m":17.55,"lo":17.5,"hi":17.6},{"s":1774684800000,"m":19.95,"lo":19.8,"hi":20.1},{"s":1774727600000,"m":18.40,"lo":18.4,"hi":18.4},{"s":1774756800000,"m":21.07,"lo":20.9,"hi":21.1},{"s":1774764000000,"m":20.75,"lo":20.6,"hi":20.8}],
-  roof: [{"s":1774166400000,"m":28.38,"lo":27.3,"hi":29.5},{"s":1774195200000,"m":20.32,"lo":20.1,"hi":20.5},{"s":1774224000000,"m":30.71,"lo":28.6,"hi":31.8},{"s":1774252800000,"m":28.30,"lo":27.4,"hi":29.4},{"s":1774281600000,"m":20.67,"lo":20.6,"hi":20.8},{"s":1774310400000,"m":26.95,"lo":24.9,"hi":29.3},{"s":1774339200000,"m":24.35,"lo":23.5,"hi":24.7},{"s":1774368000000,"m":19.69,"lo":19.6,"hi":19.7},{"s":1774396800000,"m":31.96,"lo":30.0,"hi":34.8},{"s":1774425600000,"m":25.80,"lo":25.8,"hi":25.8},{"s":1774454400000,"m":25.80,"lo":25.8,"hi":25.8},{"s":1774483200000,"m":30.12,"lo":27.6,"hi":31.6},{"s":1774512000000,"m":26.00,"lo":26.0,"hi":26.0},{"s":1774540800000,"m":15.68,"lo":15.6,"hi":15.7},{"s":1774569600000,"m":21.72,"lo":16.2,"hi":25.0},{"s":1774598400000,"m":19.13,"lo":18.8,"hi":19.6},{"s":1774627200000,"m":16.62,"lo":16.6,"hi":16.7},{"s":1774656000000,"m":23.21,"lo":21.7,"hi":26.6},{"s":1774684800000,"m":26.30,"lo":26.3,"hi":26.3},{"s":1774713600000,"m":26.30,"lo":26.3,"hi":26.3},{"s":1774742400000,"m":26.30,"lo":26.3,"hi":26.3},{"s":1774764000000,"m":26.30,"lo":26.3,"hi":26.3}],
-  humidity: [{"s":1774166400000,"m":64.95,"lo":63.3,"hi":67.3},{"s":1774195200000,"m":72.30,"lo":72.2,"hi":72.7},{"s":1774224000000,"m":69.61,"lo":69.0,"hi":69.8},{"s":1774252800000,"m":67.17,"lo":65.8,"hi":68.1},{"s":1774281600000,"m":70.97,"lo":70.5,"hi":71.1},{"s":1774310400000,"m":71.09,"lo":70.5,"hi":71.7},{"s":1774339200000,"m":71.00,"lo":70.5,"hi":71.3},{"s":1774368000000,"m":73.85,"lo":73.7,"hi":74.4},{"s":1774396800000,"m":68.65,"lo":66.8,"hi":69.5},{"s":1774418400000,"m":65.31,"lo":63.3,"hi":68.7},{"s":1774447200000,"m":68.58,"lo":68.2,"hi":68.7},{"s":1774476000000,"m":66.21,"lo":65.8,"hi":66.8},{"s":1774504800000,"m":63.02,"lo":62.6,"hi":64.1},{"s":1774533600000,"m":64.79,"lo":64.6,"hi":65.0},{"s":1774562400000,"m":53.75,"lo":51.7,"hi":58.1},{"s":1774591200000,"m":54.89,"lo":54.7,"hi":55.2},{"s":1774620000000,"m":61.46,"lo":61.1,"hi":61.8},{"s":1774648800000,"m":65.05,"lo":64.3,"hi":66.1},{"s":1774677600000,"m":59.61,"lo":59.2,"hi":59.9},{"s":1774706400000,"m":66.10,"lo":65.9,"hi":66.5},{"s":1774735200000,"m":69.86,"lo":68.4,"hi":70.0},{"s":1774756800000,"m":59.03,"lo":58.4,"hi":59.7},{"s":1774764000000,"m":60.27,"lo":60.0,"hi":61.1}],
-};
-
 const STAT_CONFIG = {
-  outside:  { label:'Outside',          color:'#f0a020', unit:'°C', yMin:12, yMax:28 },
-  lounge:   { label:'Lounge',           color:'#2dd4bf', unit:'°C', yMin:17, yMax:26 },
-  study:    { label:'Study',            color:'#60a0f0', unit:'°C', yMin:17, yMax:26 },
-  kitchen:  { label:'Kitchen',          color:'#4ade80', unit:'°C', yMin:17, yMax:25 },
-  roof:     { label:'Roof cavity',      color:'#f06050', unit:'°C', yMin:12, yMax:42 },
-  humidity: { label:'Kitchen Humidity', color:'#60a0f0', unit:'%',  yMin:40, yMax:80 },
+  outside:  { label:'Outside', entity: ENTITIES.outside, color:'#f0a020', unit:'°C', yMin:12, yMax:28 },
+  lounge:   { label:'Lounge', entity: ENTITIES.lounge, color:'#2dd4bf', unit:'°C', yMin:17, yMax:26 },
+  study:    { label:'Study', entity: ENTITIES.studyTemp, color:'#60a0f0', unit:'°C', yMin:17, yMax:26 },
+  kitchen:  { label:'Kitchen', entity: ENTITIES.kitchenTemp, color:'#4ade80', unit:'°C', yMin:17, yMax:25 },
+  roof:     { label:'Roof cavity', entity: ENTITIES.roofTemp, color:'#f06050', unit:'°C', yMin:12, yMax:42 },
+  humidity: { label:'Kitchen Humidity', entity: ENTITIES.kitchenHum, color:'#60a0f0', unit:'%', yMin:40, yMax:80 },
 };
 const STAT_ORDER = ['outside','lounge','study','kitchen','roof','humidity'];
-
 let currentStatSensor = null;
 let statChartInstance  = null;
+let statDataCache = {};
+
+async function openStatPopup(sensorKey) {
+  currentStatSensor = sensorKey;
+  const cfg = STAT_CONFIG[sensorKey];
+  document.getElementById('statPopupTitle').textContent = `Loading ${cfg.label}...`;
+  document.getElementById('statPopup').classList.add('open');
+  buildStatDots(sensorKey);
+
+  if (statChartInstance) { statChartInstance.destroy(); statChartInstance = null; }
+
+  let history = statDataCache[sensorKey];
+  if (!history) {
+    const rawHistory = await haGetHistory([cfg.entity], 7 * 24);
+	history = processHistory(rawHistory, cfg.entity)
+    statDataCache[sensorKey] = history;
+  }
+
+  document.getElementById('statPopupTitle').textContent = cfg.label;
+  document.getElementById('statPopupSub').textContent = '7-day history';
+
+  if(history.length === 0) {
+    document.getElementById('statBar').innerHTML = `<div class="stat-cell" style="text-align:center; color: var(--muted);">No 7-day history found for this entity.</div>`;
+    return;
+  }
+
+  buildStatBar(history, cfg);
+
+  const canvas = document.getElementById('statChart');
+  statChartInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      datasets: [
+        { label: cfg.label, data: history, borderColor: cfg.color, tension: 0.3, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointBackgroundColor: cfg.color }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 220 },
+      interaction: { mode:'index', intersect:false },
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { type: 'time', time: { unit: 'day' }, grid: { color:'rgba(255,255,255,0.04)' }, ticks: { color:'rgba(255,255,255,0.3)', font:{ family:"'DM Mono', monospace", size:10 } } },
+        y: { min: cfg.yMin, max: cfg.yMax, grid: { color:'rgba(255,255,255,0.05)' }, ticks: { color:'rgba(255,255,255,0.3)', font:{ family:"'DM Mono', monospace", size:10 }, callback: v => v + cfg.unit } }
+      }
+    }
+  });
+}
 
 function buildStatDots(active) {
-  document.getElementById('statDots').innerHTML = STAT_ORDER.map(k => {
-    const cfg = STAT_CONFIG[k];
-    const isActive = k === active;
-    return `<div class="stat-dot${isActive ? ' active' : ''}"
-      style="${isActive ? `background:${cfg.color}` : ''}"
-      onclick="openStatPopup('${k}')" title="${cfg.label}"></div>`;
-  }).join('');
+    document.getElementById('statDots').innerHTML = STAT_ORDER.map(k => {
+        const cfg = STAT_CONFIG[k];
+        const isActive = k === active;
+        return `<div class="stat-dot${isActive ? ' active' : ''}" style="${isActive ? `background:${cfg.color}` : ''}" onclick="openStatPopup('${k}')" title="${cfg.label}"></div>`;
+    }).join('');
 }
 
 function buildStatBar(data, cfg) {
-  const means = data.map(d => d.m);
-  const lows  = data.map(d => d.lo);
-  const highs = data.map(d => d.hi);
-  const mn   = Math.min(...lows).toFixed(1);
-  const mx   = Math.max(...highs).toFixed(1);
-  const avg  = (means.reduce((a,b)=>a+b,0)/means.length).toFixed(1);
-  // live "now" value from the card
+  const values = data.map(d => d.y);
+  const mn = Math.min(...values).toFixed(1);
+  const mx = Math.max(...values).toFixed(1);
+  const avg = (values.reduce((a,b)=>a+b,0)/values.length).toFixed(1);
   const liveMap = { outside:'.val-outside', lounge:'.val-lounge', study:'.val-study', kitchen:'.val-kitchen', roof:'.val-roof', humidity:'.humidity-val' };
-  const liveEl  = document.querySelector(liveMap[currentStatSensor]);
+  const liveEl = document.querySelector(liveMap[currentStatSensor]);
   const now = liveEl ? liveEl.textContent.replace(/[^\d.]/g,'') || '—' : '—';
   document.getElementById('statBar').innerHTML = `
     <div class="stat-cell"><div class="stat-cell-label">7-day low</div><div class="stat-cell-val" style="color:${cfg.color}">${mn}${cfg.unit}</div></div>
@@ -1894,153 +1104,32 @@ function buildStatBar(data, cfg) {
     <div class="stat-cell"><div class="stat-cell-label">Now</div><div class="stat-cell-val" style="color:${cfg.color}">${now ? now + cfg.unit : '—'}</div></div>`;
 }
 
-function openStatPopup(sensorKey) {
-  currentStatSensor = sensorKey;
-  const cfg  = STAT_CONFIG[sensorKey];
-  const raw  = RAW_STATS[sensorKey];
-
-  document.getElementById('statPopupTitle').textContent = cfg.label;
-  document.getElementById('statPopupSub').textContent   = '7-day hourly stats · min / mean / max band';
-
-  buildStatDots(sensorKey);
-  buildStatBar(raw, cfg);
-
-  if (statChartInstance) { statChartInstance.destroy(); statChartInstance = null; }
-
-  const labels = raw.map(d => epochToAEST(d.s));
-  const means  = raw.map(d => d.m);
-  const lows   = raw.map(d => d.lo);
-  const highs  = raw.map(d => d.hi);
-
-  const canvas = document.getElementById('statChart');
-  const ctx    = canvas.getContext('2d');
-
-  // Build a gradient fill for the band
-  const grad = ctx.createLinearGradient(0, 0, 0, 300);
-  grad.addColorStop(0, cfg.color + '30');
-  grad.addColorStop(1, cfg.color + '05');
-
-  statChartInstance = new Chart(canvas, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        // Min/max band — use fill 'between' via two datasets
-        {
-          label: 'Max',
-          data: highs,
-          borderColor: 'transparent',
-          backgroundColor: grad,
-          fill: '+1',
-          tension: 0.3,
-          pointRadius: 0,
-          borderWidth: 0,
-          order: 2,
-        },
-        {
-          label: 'Min',
-          data: lows,
-          borderColor: 'transparent',
-          backgroundColor: 'transparent',
-          fill: false,
-          tension: 0.3,
-          pointRadius: 0,
-          borderWidth: 0,
-          order: 3,
-        },
-        // Mean line on top
-        {
-          label: cfg.label,
-          data: means,
-          borderColor: cfg.color,
-          backgroundColor: 'transparent',
-          fill: false,
-          tension: 0.3,
-          borderWidth: 2,
-          pointRadius: raw.length < 20 ? 4 : 0,
-          pointHoverRadius: 5,
-          pointBackgroundColor: cfg.color,
-          order: 1,
-        },
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: { duration: 220 },
-      interaction: { mode:'index', intersect:false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#1a1e2a',
-          borderColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1,
-          titleFont: { family:"'DM Mono', monospace", size:11 },
-          bodyFont:  { family:"'DM Mono', monospace", size:11 },
-          titleColor: 'rgba(255,255,255,0.45)',
-          bodyColor:  '#e8eaf0',
-          filter: item => item.dataset.label !== 'Max' && item.dataset.label !== 'Min',
-          callbacks: {
-            label: ctx => {
-              if (ctx.dataset.label === 'Max' || ctx.dataset.label === 'Min') return null;
-              const i = ctx.dataIndex;
-              return ` Mean ${ctx.parsed.y.toFixed(1)}${cfg.unit}  (${lows[i]}–${highs[i]}${cfg.unit})`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid:  { color:'rgba(255,255,255,0.04)' },
-          ticks: { color:'rgba(255,255,255,0.3)', font:{ family:"'DM Mono', monospace", size:10 }, maxTicksLimit:10, maxRotation:0 }
-        },
-        y: {
-          min: cfg.yMin, max: cfg.yMax,
-          grid:  { color:'rgba(255,255,255,0.05)' },
-          ticks: { color:'rgba(255,255,255,0.3)', font:{ family:"'DM Mono', monospace", size:10 }, callback: v => v + cfg.unit }
-        }
-      }
-    }
-  });
-
-  document.getElementById('statPopup').classList.add('open');
-  document.addEventListener('keydown', onStatKeydown);
-}
-
 function closeStat() {
   document.getElementById('statPopup').classList.remove('open');
   document.removeEventListener('keydown', onStatKeydown);
+  if (statChartInstance) { statChartInstance.destroy(); statChartInstance = null; }
 }
-
-function closeStatOnBackdrop(e) {
-  if (e.target === document.getElementById('statPopup')) closeStat();
-}
-
+function closeStatOnBackdrop(e) { if (e.target.id === 'statPopup') closeStat(); }
 function navigateStat(dir) {
-  const idx  = STAT_ORDER.indexOf(currentStatSensor);
-  const next = STAT_ORDER[(idx + dir + STAT_ORDER.length) % STAT_ORDER.length];
-  openStatPopup(next);
+  const idx = STAT_ORDER.indexOf(currentStatSensor);
+  openStatPopup(STAT_ORDER[(idx + dir + STAT_ORDER.length) % STAT_ORDER.length]);
 }
-
 function onStatKeydown(e) {
-  if (e.key === 'Escape')     closeStat();
+  if (e.key === 'Escape') closeStat();
   if (e.key === 'ArrowRight') navigateStat(1);
-  if (e.key === 'ArrowLeft')  navigateStat(-1);
+  if (e.key === 'ArrowLeft') navigateStat(-1);
 }
-
-// Touch swipe on the panel
-(function() {
+(function() { // Swipe navigation for stats popup
   let sx = null;
   const panel = document.querySelector('.stat-popup-panel');
   panel.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive:true });
-  panel.addEventListener('touchend',   e => {
+  panel.addEventListener('touchend', e => {
     if (sx === null) return;
     const dx = e.changedTouches[0].clientX - sx;
     if (Math.abs(dx) > 60) navigateStat(dx < 0 ? 1 : -1);
     sx = null;
   });
 })();
-
+</script>
 </body>
 </html>
-</script></body></html>
