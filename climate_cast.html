@@ -231,6 +231,15 @@
   .s-coral .sensor-val   { color: var(--coral); }
   .s-bluesoft .sensor-val { color: var(--blue); }
 
+  .sensor-rate {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .sensor-rate.rising { color: var(--coral); }
+  .sensor-rate.falling { color: var(--blue); }
+
   /* ── CENTRE COL ── */
   .col-centre {
     display: flex;
@@ -782,42 +791,60 @@
     <div class="col-left">
       <div class="col-label">Temperatures</div>
       <div class="sensor-row s-amber sensor-tappable" onclick="openChart(&#39;outside&#39;)">
-        <div class="sensor-name">Outside</div>
+        <div>
+          <div class="sensor-name">Outside</div>
+          <div class="sensor-rate" id="rate-outside"></div>
+        </div>
         <div style="display:flex;align-items:center;gap:6px">
           <div><span class="sensor-val" id="val-outside">—</span><span class="sensor-unit">°C</span></div>
           <div class="sensor-chart-hint">↗</div>
         </div>
       </div>
       <div class="sensor-row s-teal sensor-tappable" onclick="openChart(&#39;lounge&#39;)">
-        <div class="sensor-name">Lounge</div>
+        <div>
+          <div class="sensor-name">Lounge</div>
+          <div class="sensor-rate" id="rate-lounge"></div>
+        </div>
         <div style="display:flex;align-items:center;gap:6px">
           <div><span class="sensor-val" id="val-lounge">—</span><span class="sensor-unit">°C</span></div>
           <div class="sensor-chart-hint">↗</div>
         </div>
       </div>
       <div class="sensor-row s-blue sensor-tappable" onclick="openChart(&#39;study&#39;)">
-        <div class="sensor-name">Study</div>
+        <div>
+          <div class="sensor-name">Study</div>
+          <div class="sensor-rate" id="rate-study"></div>
+        </div>
         <div style="display:flex;align-items:center;gap:6px">
           <div><span class="sensor-val" id="val-study">—</span><span class="sensor-unit">°C</span></div>
           <div class="sensor-chart-hint">↗</div>
         </div>
       </div>
       <div class="sensor-row s-green sensor-tappable" onclick="openChart(&#39;kitchen&#39;)">
-        <div class="sensor-name">Kitchen</div>
+        <div>
+          <div class="sensor-name">Kitchen</div>
+          <div class="sensor-rate" id="rate-kitchen"></div>
+        </div>
         <div style="display:flex;align-items:center;gap:6px">
           <div><span class="sensor-val" id="val-kitchen">—</span><span class="sensor-unit">°C</span></div>
           <div class="sensor-chart-hint">↗</div>
         </div>
       </div>
       <div class="sensor-row s-coral sensor-tappable" onclick="openChart(&#39;roof&#39;)">
-        <div class="sensor-name">Roof</div>
+        <div>
+          <div class="sensor-name">Roof</div>
+          <div class="sensor-rate" id="rate-roof"></div>
+        </div>
         <div style="display:flex;align-items:center;gap:6px">
           <div><span class="sensor-val" id="val-roof">—</span><span class="sensor-unit">°C</span></div>
           <div class="sensor-chart-hint">↗</div>
         </div>
       </div>
       <div class="sensor-row s-bluesoft sensor-tappable" onclick="openChart(&#39;humidity&#39;)">
-        <div class="sensor-name">Humidity</div>
+        <div>
+          <div class="sensor-name">Humidity</div>
+          <div class="sensor-rate" id="rate-humidity"></div>
+        </div>
         <div style="display:flex;align-items:center;gap:6px">
           <div><span class="sensor-val" id="val-humidity">—</span><span class="sensor-unit">%</span></div>
           <div class="sensor-chart-hint">↗</div>
@@ -960,6 +987,9 @@
   </div>
 </div>
 
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
 <!-- CHART POPUP -->
 <div class="chart-popup" id="chartPopup" onclick="closeChartOnBackdrop(event)">
   <div class="chart-popup-panel">
@@ -986,6 +1016,35 @@
 // ── HA CONFIG ──
 const HA_URL = 'https://ha.slink42.com';
 
+// HA_TOKEN: prefer localStorage override, fall back to value from climate_cast_config.js
+// (HA_TOKEN may be declared by climate_cast_config.js as a var — safe to reassign)
+const _HA_TOKEN_STORED = localStorage.getItem('ha_climate_token') || '';
+const _HA_TOKEN_CONFIG = (typeof HA_TOKEN !== 'undefined' && HA_TOKEN !== 'YOUR_HA_TOKEN') ? HA_TOKEN : '';
+// Use a let so we can update after the prompt
+let _HA_TOKEN = _HA_TOKEN_STORED || _HA_TOKEN_CONFIG;
+
+// Token prompt overlay — shown when no token is available
+if (!_HA_TOKEN) {
+  const _overlay = document.createElement('div');
+  _overlay.className = 'token-overlay';
+  _overlay.innerHTML = `
+    <div style="color:var(--amber);font-size:16px;font-weight:600;font-family:var(--font)">Home Assistant token required</div>
+    <div style="color:var(--muted);font-size:11px;max-width:340px;text-align:center;line-height:1.6;font-family:var(--mono)">
+      Profile → Security → Long-Lived Access Tokens → Create Token
+    </div>
+    <input id="_tokenInput" type="password" placeholder="Paste token here…"/>
+    <button onclick="
+      var v=document.getElementById('_tokenInput').value.trim();
+      if(!v)return;
+      localStorage.setItem('ha_climate_token',v);
+      location.reload();
+    ">Connect</button>`;
+  document.body.appendChild(_overlay);
+}
+
+// Expose a safe getter so all functions use the live value
+function getToken() { return localStorage.getItem('ha_climate_token') || _HA_TOKEN_CONFIG || ''; }
+
 const ENTITIES = {
   controller: 'climate.izone_controller_000099968',
   living:     'climate.izone_living',
@@ -1000,7 +1059,7 @@ async function haCall(service, data) {
   try {
     const r = await fetch(`${HA_URL}/api/services/${d}/${s}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${HA_TOKEN}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
     if (!r.ok) throw new Error(`${r.status}`);
@@ -1010,7 +1069,7 @@ async function haCall(service, data) {
 
 async function haGetStates(ids) {
   const res = await Promise.all(ids.map(id =>
-    fetch(`${HA_URL}/api/states/${id}`, { headers: { Authorization: `Bearer ${HA_TOKEN}` } })
+    fetch(`${HA_URL}/api/states/${id}`, { headers: { Authorization: `Bearer ${getToken()}` } })
       .then(r => r.ok ? r.json() : null).catch(() => null)
   ));
   const map = {};
@@ -1041,6 +1100,90 @@ setInterval(updateClock, 5000);
 
 // ── WEATHER ICONS ──
 const W_ICONS = { sunny:'☀️', 'clear-night':'🌙', partlycloudy:'⛅', cloudy:'☁️', fog:'🌫️', rainy:'🌧️', snowy:'❄️', lightning:'⛈️', windy:'💨', pouring:'🌧️', hail:'🌨️' };
+
+function setMode(mode) {
+  const modeMap   = { off:'active-off', cool:'active-cool', heat:'active-heat', heat_cool:'active-auto', fan_only:'active-fan', dry:'active-dry' };
+  const modeBtnId = { off:'btn-off', cool:'btn-cool', heat:'btn-heat', heat_cool:'btn-auto', fan_only:'btn-fan', dry:'btn-dry' };
+  Object.values(modeBtnId).forEach(id => { const el = document.getElementById(id); if (el) el.className = 'mode-btn'; });
+  const activeBtn = document.getElementById(modeBtnId[mode]);
+  if (activeBtn) activeBtn.classList.add(modeMap[mode] || '');
+
+  const dot = document.getElementById('sysDot');
+  const lbl = document.getElementById('sysLabel');
+  if (mode === 'off') {
+    if (dot) dot.className = 'sys-dot';
+    if (lbl) { lbl.textContent = 'off'; lbl.className = 'sys-mode-text'; }
+  } else {
+    if (dot) dot.className = 'sys-dot on';
+    if (lbl) { lbl.textContent = mode.replace(/_/g, ' '); lbl.className = 'sys-mode-text active'; }
+  }
+
+  haCall('climate.set_hvac_mode', { entity_id: ENTITIES.controller, hvac_mode: mode });
+  showToast(`Mode → ${mode.replace(/_/g, ' ')}`);
+}
+
+function toggleZone(zone, status) {
+    const entity_id = ENTITIES[zone];
+    if (!entity_id) return;
+    const service = status === 'on' ? 'climate.turn_on' : 'climate.turn_off';
+    haCall(service, { entity_id });
+    showToast(`${zone.charAt(0).toUpperCase() + zone.slice(1)} zone turned ${status}`);
+}
+
+function adjustZoneSetpoint(zone, amount) {
+    const entity_id = ENTITIES[zone];
+    if (!entity_id) return;
+    const currentSp = zoneSetpoints[zone] || 22;
+    const newSp = currentSp + amount;
+    haCall('climate.set_temperature', { entity_id, temperature: newSp });
+    const spEl = document.getElementById(`sp-${zone}`);
+    if (spEl) spEl.textContent = newSp.toFixed(1) + '°';
+    zoneSetpoints[zone] = newSp;
+}
+
+async function applyPreset(preset) {
+    showToast(`Applying preset: ${preset}...`);
+    const allZoneIds = [ENTITIES.living, ENTITIES.study, ENTITIES.bedroom, ENTITIES.dining];
+    
+    const turnOff = (zones) => zones.forEach(id => haCall('climate.turn_off', { entity_id: id }));
+    const turnOn = (zones) => zones.forEach(id => haCall('climate.turn_on', { entity_id: id }));
+    const setTemp = (zones, temp) => zones.forEach(id => haCall('climate.set_temperature', { entity_id: id, temperature: temp }));
+
+    if (preset === 'away') {
+        turnOff(allZoneIds);
+    } else if (preset === 'sleep') {
+        await turnOff([ENTITIES.living, ENTITIES.study, ENTITIES.dining]);
+        await setTemp([ENTITIES.bedroom], 22);
+        turnOn([ENTITIES.bedroom]);
+    } else if (preset === 'work') {
+        await turnOff([ENTITIES.living, ENTITIES.bedroom]);
+        await setTemp([ENTITIES.study, ENTITIES.dining], 22);
+        turnOn([ENTITIES.study, ENTITIES.dining]);
+    } else if (preset === 'study') {
+        await turnOff([ENTITIES.living, ENTITIES.bedroom, ENTITIES.dining]);
+        await setTemp([ENTITIES.study], 22);
+        turnOn([ENTITIES.study]);
+    } else if (preset === 'evening') {
+        await turnOff([ENTITIES.study, ENTITIES.bedroom]);
+        await setTemp([ENTITIES.living, ENTITIES.dining], 22);
+        turnOn([ENTITIES.living, ENTITIES.dining]);
+    } else if (preset === 'dehumid') {
+        await haCall('climate.set_hvac_mode', { entity_id: ENTITIES.controller, hvac_mode: 'dry' });
+        await turnOff([ENTITIES.living, ENTITIES.study, ENTITIES.bedroom]);
+        turnOn([ENTITIES.dining]);
+    }
+    setTimeout(loadState, 1500); // Fast refresh
+}
+
+// Build dot indicators
+function buildDots(activeSensor) {
+  const el = document.getElementById('chartDots');
+  el.innerHTML = SENSOR_ORDER.map(k => {
+    const cfg = SENSOR_CONFIG[k];
+    const active = k === activeSensor ? ' active' : '';
+    return `<div class="chart-dot${active}" style="${active ? `background:${cfg.color}` : ''}" onclick="openChart('${k}')" title="${cfg.label}"></div>`;
+  }).join('');
+}
 
 // ── ZONE STATE ──
 const zoneSetpoints = { living:22.5, study:22.5, bedroom:22.5, dining:22.5 };
@@ -1098,9 +1241,11 @@ function applyControllerUI(state) {
   if (supply != null) document.getElementById('supplyTemp').textContent = parseFloat(supply).toFixed(1) + '°';
 }
 
+let sensorHistory = {};
+
 // ── LIVE STATE ──
 async function loadState() {
-  if (!HA_TOKEN) return;
+  if (!getToken()) return;
   const ids = [
     ENTITIES.controller, ENTITIES.living, ENTITIES.study, ENTITIES.bedroom, ENTITIES.dining,
     'sensor.thermometer_outside_temperature',
@@ -1131,6 +1276,41 @@ async function loadState() {
     const s = st[id];
     if (s && !isNaN(parseFloat(s.state))) {
       document.getElementById(elId).textContent = parseFloat(s.state).toFixed(1);
+
+      // Rate of change calculation
+      const now = new Date(s.last_updated).getTime();
+      const newValue = parseFloat(s.state);
+      const rateEl = document.getElementById(elId.replace('val-', 'rate-'));
+
+      if (sensorHistory[id] && rateEl) {
+        const prev = sensorHistory[id];
+        
+        // Only calculate if the timestamp is new
+        if (prev.timestamp < now) {
+            const timeDiffHours = (now - prev.timestamp) / (1000 * 60 * 60);
+            const valueDiff = newValue - prev.value;
+            const ratePerHour = timeDiffHours > 0 ? valueDiff / timeDiffHours : 0;
+            const absRate = Math.abs(ratePerHour);
+
+            let arrow = '→';
+            let sign = '';
+            rateEl.className = 'sensor-rate'; // reset
+
+            if (absRate > 0.05) {
+                arrow = ratePerHour > 0 ? '↑' : '↓';
+                sign = ratePerHour > 0 ? '+' : '';
+                if (ratePerHour > 0) {
+                    rateEl.classList.add('rising');
+                } else {
+                    rateEl.classList.add('falling');
+                }
+            }
+            rateEl.textContent = `${arrow} ${sign}${ratePerHour.toFixed(1)}/h`;
+        }
+      }
+      
+      // Always update history with the latest data point to be used in the NEXT iteration
+      sensorHistory[id] = { value: newValue, timestamp: now };
     }
   });
 
@@ -1187,7 +1367,7 @@ async function fetchHistory(entityId) {
   const url = `${HA_URL}/api/history/period/${startTime}?filter_entity_id=${entityId}&minimal_response`;
 
   try {
-    const r = await fetch(url, { headers: { Authorization: `Bearer ${HA_TOKEN}` } });
+    const r = await fetch(url, { headers: { Authorization: `Bearer ${getToken()}` } });
     if (!r.ok) throw new Error(`API returned ${r.status}`);
     const history = await r.json();
 
@@ -1197,7 +1377,8 @@ async function fetchHistory(entityId) {
 
     return thin(history[0].map(item => ({
       x: formatTime(item.last_changed),
-      y: parseFloat(item.state)
+      y: parseFloat(item.state),
+      ts: new Date(item.last_changed).getTime()
     })).filter(item => !isNaN(item.y)), 60); // Thin to max 60 points
 
   } catch (e) {
@@ -1223,39 +1404,39 @@ const SENSOR_ORDER = ['outside','lounge','study','kitchen','roof','humidity'];
 let currentChartSensor = null;
 let popupChartInstance  = null;
 
-// Build dot indicators
-function buildDots(activeSensor) {
-  const el = document.getElementById('chartDots');
-  el.innerHTML = SENSOR_ORDER.map(k => {
-    const cfg = SENSOR_CONFIG[k];
-    const active = k === activeSensor ? ' active' : '';
-    return `<div class="chart-dot${active}" style="${active ? `background:${cfg.color}` : ''}" onclick="openChart('${k}')" title="${cfg.label}"></div>`;
-  }).join('');
-}
-
-// Compute min/max/avg for stat bar
-function computeStats(pts) {
-  const vals = pts.map(p => p.y).filter(v => !isNaN(v));
-  if (!vals.length) return { min:'—', max:'—', avg:'—' };
-  const mn  = Math.min(...vals).toFixed(1);
-  const mx  = Math.max(...vals).toFixed(1);
-  const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
-  return { min:mn, max:mx, avg };
-}
-
-function renderStats(pts, cfg) {
-  const s = computeStats(pts);
+// Compute stats and render them into the stat bar
+function computeAndRenderStats(pts, cfg) {
   const el = document.getElementById('chartStats');
+  if (!el) return;
+
+  const vals = pts.map(p => p.y).filter(v => !isNaN(v));
+  if (vals.length < 2) {
+    el.innerHTML = '';
+    return;
+  }
+  
+  const s = {
+      min: Math.min(...vals).toFixed(1),
+      max: Math.max(...vals).toFixed(1),
+      avg: (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1),
+      now: vals[vals.length - 1].toFixed(1)
+  };
+
+  // Calculate Rate of Change from the last two history points
+  const lastPoint = pts[pts.length - 1];
+  const prevPoint = pts[pts.length - 2];
+  const timeDiffHours = (lastPoint.ts - prevPoint.ts) / (1000 * 60 * 60);
+  const valueDiff = lastPoint.y - prevPoint.y;
+  const ratePerHour = timeDiffHours > 0 ? valueDiff / timeDiffHours : 0;
+  const sign = ratePerHour >= 0.05 ? '+' : '';
+  const rateText = `${sign}${ratePerHour.toFixed(1)}/h`;
+
   el.innerHTML = `
     <div class="chart-stat"><div class="chart-stat-label">Min</div><div class="chart-stat-val" style="color:${cfg.color}">${s.min}${cfg.unit}</div></div>
     <div class="chart-stat"><div class="chart-stat-label">Avg</div><div class="chart-stat-val" style="color:${cfg.color}">${s.avg}${cfg.unit}</div></div>
     <div class="chart-stat"><div class="chart-stat-label">Max</div><div class="chart-stat-val" style="color:${cfg.color}">${s.max}${cfg.unit}</div></div>
-    <div class="chart-stat"><div class="chart-stat-label">Now</div><div class="chart-stat-val" style="color:${cfg.color}" id="chartStatNow">—</div></div>`;
-  // Set "Now" value from the last point in the history data
-  if (pts.length > 0) {
-    const nowValue = pts[pts.length - 1].y.toFixed(1);
-    document.getElementById('chartStatNow').textContent = nowValue + cfg.unit;
-  }
+    <div class="chart-stat"><div class="chart-stat-label">Rate</div><div class="chart-stat-val" style="color:${cfg.color}">${rateText}</div></div>
+    <div class="chart-stat"><div class="chart-stat-label">Now</div><div class="chart-stat-val" style="color:${cfg.color}">${s.now}${cfg.unit}</div></div>`;
 }
 
 async function openChart(sensorKey) {
@@ -1289,7 +1470,7 @@ async function openChart(sensorKey) {
 
   // Update subtitle and render stats
   document.getElementById('chartPopupSub').textContent = '24-hour trend';
-  renderStats(pts, cfg);
+  computeAndRenderStats(pts, cfg);
 
   // Render chart
   const isSparse = pts.length < 4;
