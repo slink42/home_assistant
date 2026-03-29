@@ -1342,6 +1342,16 @@ const SENSOR_ENTITY_MAP = {
   humidity: 'sensor.temperature_and_humidity_alarm_humidity',
 };
 
+// Map sensor keys → their related iZone climate entity (null = no zone)
+const SENSOR_ZONE_MAP = {
+  outside:  null,
+  lounge:   'climate.izone_living',
+  study:    'climate.izone_study',
+  kitchen:  'climate.izone_dining',
+  roof:     null,
+  humidity: 'climate.izone_dining',
+};
+
 // --- Helper Functions ---
 
 // UTC ISO → Local time label
@@ -1349,7 +1359,7 @@ function formatTime(utc) {
   return new Date(utc).toLocaleTimeString(navigator.language, { hour:'2-digit', minute:'2-digit', hour12:false });
 }
 
-// Thin an array of {x,y} points to at most `max` evenly spaced samples
+// Thin an array of {x,y,ts} points to at most `max` evenly spaced samples
 function thin(pts, max) {
   if (pts.length <= max) return pts;
   const result = [pts[0]];
@@ -1372,20 +1382,74 @@ async function fetchHistory(entityId) {
     const history = await r.json();
 
     if (!history || history.length === 0 || !Array.isArray(history[0])) {
-      return []; // No data or invalid format
+      return [];
     }
 
     return thin(history[0].map(item => ({
       x: formatTime(item.last_changed),
       y: parseFloat(item.state),
       ts: new Date(item.last_changed).getTime()
-    })).filter(item => !isNaN(item.y)), 60); // Thin to max 60 points
+    })).filter(item => !isNaN(item.y)), 60);
 
   } catch (e) {
     console.error('Failed to fetch history:', e);
     showToast(`Chart Error: ${e.message}`, 'var(--coral)');
-    return null; // Indicate error
+    return null;
   }
+}
+
+// Fetch zone climate history — returns array of {ts, state, setpoint}
+// We need full (non-minimal) response to get attributes.temperature
+async function fetchZoneHistory(zoneEntityId) {
+  const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  // No minimal_response so we get full attributes including temperature setpoint
+  const url = `${HA_URL}/api/history/period/${startTime}?filter_entity_id=${zoneEntityId}`;
+
+  try {
+    const r = await fetch(url, { headers: { Authorization: `Bearer ${getToken()}` } });
+    if (!r.ok) throw new Error(`Zone history ${r.status}`);
+    const history = await r.json();
+
+    if (!history || history.length === 0 || !Array.isArray(history[0])) return [];
+
+    return history[0].map(item => ({
+      ts:       new Date(item.last_changed).getTime(),
+      state:    item.state,                              // 'off', 'heat_cool', 'cool', 'heat', etc.
+      setpoint: parseFloat(item.attributes?.temperature) // target temp, may be NaN if unavailable
+    }));
+  } catch (e) {
+    console.warn('Zone history fetch failed:', e);
+    return [];
+  }
+}
+
+// Given zone history segments and the sensor's time-axis points,
+// produce a parallel array of setpoint values: null when zone is off,
+// the setpoint when active. Uses a stepped approach — finds the zone
+// state that was in effect at each sensor timestamp.
+function buildSetpointSeries(sensorPts, zoneHistory) {
+  if (!zoneHistory || zoneHistory.length === 0) return null;
+
+  // For each sensor point, binary-search for the most recent zone state at or before that ts
+  const result = sensorPts.map(pt => {
+    // Find last zone event at or before pt.ts
+    let lo = 0, hi = zoneHistory.length - 1, idx = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (zoneHistory[mid].ts <= pt.ts) { idx = mid; lo = mid + 1; }
+      else hi = mid - 1;
+    }
+    if (idx < 0) return null; // Before any recorded zone event
+
+    const seg = zoneHistory[idx];
+    if (seg.state === 'off' || seg.state === 'unavailable' || seg.state === 'unknown') return null;
+    if (isNaN(seg.setpoint)) return null;
+    return seg.setpoint;
+  });
+
+  // If every value is null, the zone was always off — skip overlay
+  if (result.every(v => v === null)) return null;
+  return result;
 }
 
 // --- Chart Rendering ---
@@ -1410,19 +1474,15 @@ function computeAndRenderStats(pts, cfg) {
   if (!el) return;
 
   const vals = pts.map(p => p.y).filter(v => !isNaN(v));
-  if (vals.length < 2) {
-    el.innerHTML = '';
-    return;
-  }
-  
+  if (vals.length < 2) { el.innerHTML = ''; return; }
+
   const s = {
-      min: Math.min(...vals).toFixed(1),
-      max: Math.max(...vals).toFixed(1),
-      avg: (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1),
-      now: vals[vals.length - 1].toFixed(1)
+    min: Math.min(...vals).toFixed(1),
+    max: Math.max(...vals).toFixed(1),
+    avg: (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1),
+    now: vals[vals.length - 1].toFixed(1)
   };
 
-  // Calculate Rate of Change from the last two history points
   const lastPoint = pts[pts.length - 1];
   const prevPoint = pts[pts.length - 2];
   const timeDiffHours = (lastPoint.ts - prevPoint.ts) / (1000 * 60 * 60);
@@ -1441,8 +1501,9 @@ function computeAndRenderStats(pts, cfg) {
 
 async function openChart(sensorKey) {
   currentChartSensor = sensorKey;
-  const cfg = SENSOR_CONFIG[sensorKey];
+  const cfg      = SENSOR_CONFIG[sensorKey];
   const entityId = SENSOR_ENTITY_MAP[sensorKey];
+  const zoneId   = SENSOR_ZONE_MAP[sensorKey];
 
   // Show popup and loading state
   document.getElementById('chartPopupTitle').textContent = cfg.label;
@@ -1455,10 +1516,12 @@ async function openChart(sensorKey) {
   document.getElementById('chartStats').innerHTML = '';
   buildDots(sensorKey);
 
-  // Fetch data
-  const pts = await fetchHistory(entityId);
+  // Fetch sensor data and zone history in parallel
+  const [pts, zoneHistory] = await Promise.all([
+    fetchHistory(entityId),
+    zoneId ? fetchZoneHistory(zoneId) : Promise.resolve([]),
+  ]);
 
-  // Check for fetch error or no data
   if (pts === null) {
     document.getElementById('chartPopupSub').textContent = 'Error loading history.';
     return;
@@ -1468,33 +1531,67 @@ async function openChart(sensorKey) {
     return;
   }
 
-  // Update subtitle and render stats
-  document.getElementById('chartPopupSub').textContent = '24-hour trend';
+  // Build zone setpoint overlay (null when zone was off)
+  const setpointSeries = cfg.isTemp ? buildSetpointSeries(pts, zoneHistory) : null;
+  const hasSetpoint = setpointSeries !== null;
+
+  // Update subtitle
+  document.getElementById('chartPopupSub').textContent = hasSetpoint
+    ? '24-hour trend · dashed = zone target'
+    : '24-hour trend';
   computeAndRenderStats(pts, cfg);
 
   // Render chart
   const isSparse = pts.length < 4;
   const canvas   = document.getElementById('popupChart');
-  const gradient = canvas.getContext('2d').createLinearGradient(0, 0, 0, 260);
+  const ctx      = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 260);
   gradient.addColorStop(0, cfg.color + '28');
   gradient.addColorStop(1, cfg.color + '00');
+
+  // Zone target colour — slightly desaturated white-ish so it reads as "target"
+  const SETPOINT_COLOR = 'rgba(255,255,255,0.55)';
+
+  const datasets = [
+    {
+      label: cfg.label,
+      data: pts.map(p => p.y),
+      borderColor: cfg.color,
+      backgroundColor: isSparse ? 'transparent' : gradient,
+      borderWidth: 2,
+      fill: !isSparse,
+      tension: 0.4,
+      pointRadius: pts.length < 10 ? 4 : 0,
+      pointHoverRadius: 5,
+      pointBackgroundColor: cfg.color,
+      order: 1,
+    }
+  ];
+
+  if (hasSetpoint) {
+    datasets.push({
+      label: 'Zone target',
+      data: setpointSeries,
+      borderColor: SETPOINT_COLOR,
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: [5, 4],
+      stepped: true,        // flat steps matching zone setpoint changes
+      fill: false,
+      tension: 0,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointBackgroundColor: SETPOINT_COLOR,
+      spanGaps: false,      // gaps (nulls) break the line when zone is off
+      order: 0,
+    });
+  }
 
   popupChartInstance = new Chart(canvas, {
     type: 'line',
     data: {
       labels: pts.map(p => p.x),
-      datasets: [{
-        label: cfg.label,
-        data: pts.map(p => p.y),
-        borderColor: cfg.color,
-        backgroundColor: isSparse ? 'transparent' : gradient,
-        borderWidth: 2,
-        fill: !isSparse,
-        tension: 0.4,
-        pointRadius: pts.length < 10 ? 4 : 0,
-        pointHoverRadius: 5,
-        pointBackgroundColor: cfg.color,
-      }]
+      datasets,
     },
     options: {
       responsive: true,
@@ -1511,7 +1608,15 @@ async function openChart(sensorKey) {
           bodyFont:  { family:"'DM Mono', monospace", size:12 },
           titleColor: 'rgba(255,255,255,0.45)',
           bodyColor:  '#eef0f5',
-          callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)}${cfg.unit}` },
+          filter: item => item.parsed.y !== null,
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.label === 'Zone target') {
+                return ` target: ${ctx.parsed.y.toFixed(1)}°C`;
+              }
+              return ` ${ctx.parsed.y.toFixed(1)}${cfg.unit}`;
+            }
+          },
         },
       },
       scales: {
