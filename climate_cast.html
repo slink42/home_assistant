@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0052)file:///C:/Users/stuar/Downloads/climate_cast_2.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Climate</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+<link href="./climate_cast_files/css2" rel="stylesheet">
 <style>
   :root {
     --bg:      #0b0d12;
@@ -560,11 +560,199 @@
     cursor: pointer;
   }
 
-  /* Mobile bottom padding */
-  @media (max-width: 899px) {
-    .main-grid { padding-bottom: env(safe-area-inset-bottom, 12px); }
+  /* ── TAPPABLE SENSOR TILES ── */
+  .sensor-tappable {
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
   }
+  .sensor-tappable:hover  { border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.03); }
+  .sensor-tappable:active { background: rgba(255,255,255,0.06); }
+
+  .sensor-chart-hint {
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.5;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+    line-height: 1;
+  }
+  .sensor-tappable:hover .sensor-chart-hint { opacity: 1; }
+
+  /* ── CHART POPUP ── */
+  .chart-popup {
+    position: fixed;
+    inset: 0;
+    background: rgba(7,9,13,0.82);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .chart-popup.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .chart-popup-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border-hi, rgba(255,255,255,0.14));
+    border-radius: 16px;
+    width: min(760px, 100%);
+    max-height: min(520px, 90dvh);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(12px) scale(0.98);
+    transition: transform 0.2s ease;
+  }
+  .chart-popup.open .chart-popup-panel {
+    transform: translateY(0) scale(1);
+  }
+
+  .chart-popup-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 18px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 12px;
+  }
+
+  .chart-popup-title {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .chart-popup-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 3px;
+  }
+
+  .chart-close-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 14px;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.12s;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chart-close-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+  .chart-nav-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 18px;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.12s;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+    line-height: 1;
+    font-family: var(--mono);
+  }
+  .chart-nav-btn:hover { color: var(--amber); border-color: var(--amber); }
+
+  /* dot indicators */
+  .chart-popup-dots {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    padding: 10px 0 0;
+    flex-shrink: 0;
+  }
+  .chart-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+    opacity: 0.3;
+    transition: opacity 0.15s, background 0.15s;
+  }
+  .chart-dot.active { opacity: 1; }
+
+  .chart-popup-body {
+    flex: 1;
+    padding: 12px 20px;
+    min-height: 0;
+    position: relative;
+  }
+
+  .chart-popup-body canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .chart-popup-stats {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .chart-stat {
+    flex: 1;
+    padding: 10px 16px;
+    border-right: 1px solid var(--border);
+  }
+  .chart-stat:last-child { border-right: none; }
+
+  .chart-stat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .chart-stat-val {
+    font-size: 15px;
+    font-weight: 300;
+    letter-spacing: -0.5px;
+  }
+
+  /* tablet: wider popup, ensure it's not clipped by desktop fixed canvas */
+  @media (min-width: 900px) {
+    .chart-popup { padding: 32px; }
+    .chart-popup-panel { max-height: min(480px, 85dvh); }
+  }
+
+  @media (max-width: 480px) {
+    .chart-popup { padding: 12px; align-items: flex-end; }
+    .chart-popup-panel { width: 100%; border-radius: 16px 16px 8px 8px; max-height: 75dvh; }
+    .chart-stat-label { font-size: 8px; }
+    .chart-stat-val { font-size: 13px; }
+  }
+
+  /* swipe hint on mobile */
+  @media (max-width: 700px) {
+    .chart-popup-header { padding: 14px 16px 10px; }
+    .chart-popup-body { padding: 10px 14px; }
+  }
+
+  /* ── END POPUP ── */
+
 </style>
+<script src="./climate_cast_files/chart.umd.min.js.download"></script>
 </head>
 <body>
 
@@ -593,29 +781,47 @@
     <!-- LEFT: sensors -->
     <div class="col-left">
       <div class="col-label">Temperatures</div>
-      <div class="sensor-row s-amber">
+      <div class="sensor-row s-amber sensor-tappable" onclick="openChart(&#39;outside&#39;)">
         <div class="sensor-name">Outside</div>
-        <div><span class="sensor-val" id="val-outside">—</span><span class="sensor-unit">°C</span></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div><span class="sensor-val" id="val-outside">—</span><span class="sensor-unit">°C</span></div>
+          <div class="sensor-chart-hint">↗</div>
+        </div>
       </div>
-      <div class="sensor-row s-teal">
+      <div class="sensor-row s-teal sensor-tappable" onclick="openChart(&#39;lounge&#39;)">
         <div class="sensor-name">Lounge</div>
-        <div><span class="sensor-val" id="val-lounge">—</span><span class="sensor-unit">°C</span></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div><span class="sensor-val" id="val-lounge">—</span><span class="sensor-unit">°C</span></div>
+          <div class="sensor-chart-hint">↗</div>
+        </div>
       </div>
-      <div class="sensor-row s-blue">
+      <div class="sensor-row s-blue sensor-tappable" onclick="openChart(&#39;study&#39;)">
         <div class="sensor-name">Study</div>
-        <div><span class="sensor-val" id="val-study">—</span><span class="sensor-unit">°C</span></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div><span class="sensor-val" id="val-study">—</span><span class="sensor-unit">°C</span></div>
+          <div class="sensor-chart-hint">↗</div>
+        </div>
       </div>
-      <div class="sensor-row s-green">
+      <div class="sensor-row s-green sensor-tappable" onclick="openChart(&#39;kitchen&#39;)">
         <div class="sensor-name">Kitchen</div>
-        <div><span class="sensor-val" id="val-kitchen">—</span><span class="sensor-unit">°C</span></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div><span class="sensor-val" id="val-kitchen">—</span><span class="sensor-unit">°C</span></div>
+          <div class="sensor-chart-hint">↗</div>
+        </div>
       </div>
-      <div class="sensor-row s-coral">
+      <div class="sensor-row s-coral sensor-tappable" onclick="openChart(&#39;roof&#39;)">
         <div class="sensor-name">Roof</div>
-        <div><span class="sensor-val" id="val-roof">—</span><span class="sensor-unit">°C</span></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div><span class="sensor-val" id="val-roof">—</span><span class="sensor-unit">°C</span></div>
+          <div class="sensor-chart-hint">↗</div>
+        </div>
       </div>
-      <div class="sensor-row s-bluesoft">
+      <div class="sensor-row s-bluesoft sensor-tappable" onclick="openChart(&#39;humidity&#39;)">
         <div class="sensor-name">Humidity</div>
-        <div><span class="sensor-val" id="val-humidity">—</span><span class="sensor-unit">%</span></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div><span class="sensor-val" id="val-humidity">—</span><span class="sensor-unit">%</span></div>
+          <div class="sensor-chart-hint">↗</div>
+        </div>
       </div>
     </div>
 
@@ -636,12 +842,12 @@
 
       <!-- mode buttons -->
       <div class="mode-row">
-        <button class="mode-btn active-off" id="btn-off"  onclick="setMode('off')">Off</button>
-        <button class="mode-btn" id="btn-cool"            onclick="setMode('cool')">Cool</button>
-        <button class="mode-btn" id="btn-heat"            onclick="setMode('heat')">Heat</button>
-        <button class="mode-btn" id="btn-auto"            onclick="setMode('heat_cool')">Auto</button>
-        <button class="mode-btn" id="btn-fan"             onclick="setMode('fan_only')">Fan</button>
-        <button class="mode-btn" id="btn-dry"             onclick="setMode('dry')">Dry</button>
+        <button class="mode-btn active-off" id="btn-off" onclick="setMode(&#39;off&#39;)">Off</button>
+        <button class="mode-btn" id="btn-cool" onclick="setMode(&#39;cool&#39;)">Cool</button>
+        <button class="mode-btn" id="btn-heat" onclick="setMode(&#39;heat&#39;)">Heat</button>
+        <button class="mode-btn" id="btn-auto" onclick="setMode(&#39;heat_cool&#39;)">Auto</button>
+        <button class="mode-btn" id="btn-fan" onclick="setMode(&#39;fan_only&#39;)">Fan</button>
+        <button class="mode-btn" id="btn-dry" onclick="setMode(&#39;dry&#39;)">Dry</button>
       </div>
 
       <!-- zones -->
@@ -654,13 +860,13 @@
           </div>
           <div class="zone-controls">
             <div class="zone-sp-row">
-              <button class="sp-btn" onclick="adjustZoneSetpoint('living',-0.5)">−</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;living&#39;,-0.5)">−</button>
               <div class="sp-val" id="sp-living">—°</div>
-              <button class="sp-btn" onclick="adjustZoneSetpoint('living',0.5)">+</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;living&#39;,0.5)">+</button>
             </div>
             <div class="zone-onoff">
-              <button class="zon-btn" id="zon-living-on"  onclick="toggleZone('living','on')">On</button>
-              <button class="zon-btn" id="zon-living-off" onclick="toggleZone('living','off')">Off</button>
+              <button class="zon-btn" id="zon-living-on" onclick="toggleZone(&#39;living&#39;,&#39;on&#39;)">On</button>
+              <button class="zon-btn" id="zon-living-off" onclick="toggleZone(&#39;living&#39;,&#39;off&#39;)">Off</button>
             </div>
           </div>
         </div>
@@ -672,13 +878,13 @@
           </div>
           <div class="zone-controls">
             <div class="zone-sp-row">
-              <button class="sp-btn" onclick="adjustZoneSetpoint('study',-0.5)">−</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;study&#39;,-0.5)">−</button>
               <div class="sp-val" id="sp-study">—°</div>
-              <button class="sp-btn" onclick="adjustZoneSetpoint('study',0.5)">+</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;study&#39;,0.5)">+</button>
             </div>
             <div class="zone-onoff">
-              <button class="zon-btn" id="zon-study-on"  onclick="toggleZone('study','on')">On</button>
-              <button class="zon-btn" id="zon-study-off" onclick="toggleZone('study','off')">Off</button>
+              <button class="zon-btn" id="zon-study-on" onclick="toggleZone(&#39;study&#39;,&#39;on&#39;)">On</button>
+              <button class="zon-btn" id="zon-study-off" onclick="toggleZone(&#39;study&#39;,&#39;off&#39;)">Off</button>
             </div>
           </div>
         </div>
@@ -690,13 +896,13 @@
           </div>
           <div class="zone-controls">
             <div class="zone-sp-row">
-              <button class="sp-btn" onclick="adjustZoneSetpoint('bedroom',-0.5)">−</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;bedroom&#39;,-0.5)">−</button>
               <div class="sp-val" id="sp-bedroom">—°</div>
-              <button class="sp-btn" onclick="adjustZoneSetpoint('bedroom',0.5)">+</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;bedroom&#39;,0.5)">+</button>
             </div>
             <div class="zone-onoff">
-              <button class="zon-btn" id="zon-bedroom-on"  onclick="toggleZone('bedroom','on')">On</button>
-              <button class="zon-btn" id="zon-bedroom-off" onclick="toggleZone('bedroom','off')">Off</button>
+              <button class="zon-btn" id="zon-bedroom-on" onclick="toggleZone(&#39;bedroom&#39;,&#39;on&#39;)">On</button>
+              <button class="zon-btn" id="zon-bedroom-off" onclick="toggleZone(&#39;bedroom&#39;,&#39;off&#39;)">Off</button>
             </div>
           </div>
         </div>
@@ -708,13 +914,13 @@
           </div>
           <div class="zone-controls">
             <div class="zone-sp-row">
-              <button class="sp-btn" onclick="adjustZoneSetpoint('dining',-0.5)">−</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;dining&#39;,-0.5)">−</button>
               <div class="sp-val" id="sp-dining">—°</div>
-              <button class="sp-btn" onclick="adjustZoneSetpoint('dining',0.5)">+</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;dining&#39;,0.5)">+</button>
             </div>
             <div class="zone-onoff">
-              <button class="zon-btn" id="zon-dining-on"  onclick="toggleZone('dining','on')">On</button>
-              <button class="zon-btn" id="zon-dining-off" onclick="toggleZone('dining','off')">Off</button>
+              <button class="zon-btn" id="zon-dining-on" onclick="toggleZone(&#39;dining&#39;,&#39;on&#39;)">On</button>
+              <button class="zon-btn" id="zon-dining-off" onclick="toggleZone(&#39;dining&#39;,&#39;off&#39;)">Off</button>
             </div>
           </div>
         </div>
@@ -725,27 +931,27 @@
     <!-- RIGHT: presets -->
     <div class="col-right">
       <div class="col-label">Presets</div>
-      <button class="preset-btn" onclick="applyPreset('away')">
+      <button class="preset-btn" onclick="applyPreset(&#39;away&#39;)">
         <div class="preset-icon">🏠</div>
         <div class="preset-info"><span class="preset-name">Away</span><span class="preset-desc">All off</span></div>
       </button>
-      <button class="preset-btn" onclick="applyPreset('sleep')">
+      <button class="preset-btn" onclick="applyPreset(&#39;sleep&#39;)">
         <div class="preset-icon">🌙</div>
         <div class="preset-info"><span class="preset-name">Sleep</span><span class="preset-desc">Bedroom · 22°</span></div>
       </button>
-      <button class="preset-btn" onclick="applyPreset('work')">
+      <button class="preset-btn" onclick="applyPreset(&#39;work&#39;)">
         <div class="preset-icon">💻</div>
         <div class="preset-info"><span class="preset-name">Work + kitchen</span><span class="preset-desc">Study + dining · 22°</span></div>
       </button>
-      <button class="preset-btn" onclick="applyPreset('study')">
+      <button class="preset-btn" onclick="applyPreset(&#39;study&#39;)">
         <div class="preset-icon">🖥</div>
         <div class="preset-info"><span class="preset-name">Study only</span><span class="preset-desc">Study · 22°</span></div>
       </button>
-      <button class="preset-btn" onclick="applyPreset('evening')">
+      <button class="preset-btn" onclick="applyPreset(&#39;evening&#39;)">
         <div class="preset-icon">🛋</div>
         <div class="preset-info"><span class="preset-name">Evening</span><span class="preset-desc">Living + dining · 22°</span></div>
       </button>
-      <button class="preset-btn" onclick="applyPreset('dehumid')">
+      <button class="preset-btn" onclick="applyPreset(&#39;dehumid&#39;)">
         <div class="preset-icon">💧</div>
         <div class="preset-info"><span class="preset-name">Dehumidify</span><span class="preset-desc">Dry · kitchen/dining</span></div>
       </button>
@@ -754,7 +960,27 @@
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- CHART POPUP -->
+<div class="chart-popup" id="chartPopup" onclick="closeChartOnBackdrop(event)">
+  <div class="chart-popup-panel">
+    <div class="chart-popup-header">
+      <div>
+        <div class="chart-popup-title" id="chartPopupTitle">—</div>
+        <div class="chart-popup-sub" id="chartPopupSub">24-hour trend</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="chart-nav-btn" id="chartPrev" onclick="navigateChart(-1)" title="Previous sensor">‹</button>
+        <button class="chart-nav-btn" id="chartNext" onclick="navigateChart(1)" title="Next sensor">›</button>
+        <button class="chart-close-btn" onclick="closeChart()">✕</button>
+      </div>
+    </div>
+    <div class="chart-popup-dots" id="chartDots"></div>
+    <div class="chart-popup-body">
+      <canvas id="popupChart"></canvas>
+    </div>
+    <div class="chart-popup-stats" id="chartStats"></div>
+  </div>
+</div>
 
 <script>
 // ── HA CONFIG ──
@@ -963,7 +1189,318 @@ async function loadState() {
   el.className = 'ha-status ok';
 }
 
-// ── INIT ──
+// ══════════════════════════════════════════════
+// SENSOR TREND CHART POPUP
+// All timestamps from HA converted AEST (UTC+11)
+// ══════════════════════════════════════════════
+
+// Helper: UTC ISO → AEST HH:MM label
+function utcToAEST(iso) {
+  const d = new Date(iso);
+  d.setTime(d.getTime() + 11 * 3600 * 1000);
+  return d.toISOString().substring(11, 16);
+}
+
+// ── REAL 24H HISTORY (sampled from HA, 28 Mar 2026 AEST) ──
+const SENSOR_HISTORY = {
+  outside: {
+    label: 'Outside Temperature', unit: '°C', color: '#f5a623',
+    data: [
+      {x:'09:04',y:14.9},{x:'09:10',y:15.1},{x:'09:22',y:15.3},{x:'09:39',y:15.5},{x:'09:50',y:15.7},
+      {x:'10:10',y:15.9},{x:'10:25',y:16.1},{x:'10:31',y:16.3},{x:'10:37',y:16.5},{x:'10:48',y:16.7},
+      {x:'11:00',y:16.9},{x:'11:10',y:17.1},{x:'11:24',y:17.3},{x:'11:36',y:17.5},{x:'11:39',y:17.7},
+      {x:'12:01',y:18.1},{x:'12:15',y:18.3},{x:'12:23',y:18.5},{x:'12:30',y:18.7},{x:'12:37',y:18.5},
+      {x:'13:04',y:18.7},{x:'13:17',y:18.9},{x:'13:50',y:19.1},{x:'14:03',y:19.3},{x:'14:07',y:19.1},
+      {x:'14:17',y:19.3},{x:'15:11',y:19.5},{x:'15:25',y:19.3},{x:'15:47',y:19.1},{x:'16:08',y:19.2},
+      {x:'16:48',y:19.0},{x:'17:08',y:18.8},{x:'17:21',y:18.6},{x:'17:50',y:18.5},{x:'18:05',y:18.3},
+      {x:'18:22',y:18.4},{x:'18:47',y:18.2},{x:'19:09',y:18.0},{x:'19:36',y:17.8},{x:'20:12',y:17.6},
+      {x:'20:37',y:17.4},{x:'21:59',y:17.2},{x:'23:59',y:17.1},{x:'00:11',y:16.9},{x:'01:11',y:16.8},
+      {x:'03:02',y:16.6},{x:'04:02',y:16.7},{x:'05:02',y:16.6},{x:'05:36',y:16.4},{x:'06:35',y:16.3},
+      {x:'08:27',y:16.5},{x:'08:59',y:16.7},
+    ]
+  },
+  lounge: {
+    label: 'Lounge Temperature', unit: '°C', color: '#2dd4bf',
+    data: [
+      {x:'09:04',y:21.6},{x:'09:05',y:21.8},{x:'09:08',y:22.0},{x:'09:11',y:22.2},{x:'09:20',y:22.0},
+      {x:'09:25',y:21.8},{x:'09:28',y:21.6},{x:'09:36',y:21.8},{x:'09:42',y:22.0},{x:'09:48',y:22.2},
+      {x:'09:52',y:22.4},{x:'09:57',y:22.2},{x:'10:01',y:22.0},{x:'10:04',y:21.8},{x:'10:08',y:21.6},
+      {x:'10:15',y:21.8},{x:'10:23',y:22.0},{x:'10:39',y:22.2},{x:'10:48',y:22.4},{x:'10:57',y:22.2},
+      {x:'11:02',y:22.0},{x:'11:06',y:21.8},{x:'11:20',y:21.6},{x:'11:25',y:21.4},{x:'11:31',y:21.2},
+      {x:'11:37',y:21.0},{x:'11:43',y:20.8},{x:'11:51',y:20.6},{x:'12:00',y:20.4},{x:'12:12',y:20.2},
+      {x:'12:31',y:20.0},{x:'13:26',y:19.9},{x:'14:39',y:20.5},
+    ]
+  },
+  study: {
+    label: 'Study Temperature', unit: '°C', color: '#5b9cf0',
+    data: [
+      {x:'09:04',y:19.8},{x:'09:07',y:20.0},{x:'09:42',y:20.2},{x:'10:08',y:20.4},{x:'10:50',y:20.6},
+      {x:'12:41',y:20.7},{x:'13:36',y:20.8},{x:'14:00',y:21.0},{x:'14:36',y:21.2},{x:'14:57',y:21.4},
+      {x:'15:52',y:21.3},{x:'17:42',y:21.2},{x:'19:33',y:21.1},{x:'20:28',y:21.0},{x:'21:23',y:20.9},
+      {x:'23:14',y:20.8},{x:'01:04',y:20.7},{x:'02:00',y:20.6},{x:'04:46',y:20.5},{x:'05:41',y:20.4},
+      {x:'07:31',y:20.3},{x:'08:27',y:20.2},
+    ]
+  },
+  kitchen: {
+    label: 'Kitchen Temperature', unit: '°C', color: '#3ddc84',
+    data: [
+      {x:'09:04',y:18.8},{x:'09:05',y:18.9},{x:'09:08',y:19.0},{x:'09:12',y:19.1},{x:'09:16',y:19.2},
+      {x:'09:25',y:19.1},{x:'09:30',y:19.0},{x:'09:43',y:19.1},{x:'09:48',y:19.2},{x:'09:52',y:19.3},
+      {x:'10:07',y:19.2},{x:'10:24',y:19.3},{x:'10:42',y:19.4},{x:'10:50',y:19.5},{x:'10:56',y:19.6},
+      {x:'11:12',y:19.7},{x:'11:21',y:19.8},{x:'11:45',y:19.9},{x:'12:17',y:20.0},{x:'12:37',y:20.1},
+      {x:'13:05',y:20.2},{x:'13:21',y:20.3},{x:'13:42',y:20.4},{x:'14:08',y:20.5},{x:'14:25',y:20.6},
+      {x:'14:42',y:20.7},{x:'15:41',y:20.6},{x:'15:55',y:20.7},{x:'16:47',y:20.6},{x:'17:02',y:20.5},
+      {x:'17:16',y:20.4},{x:'17:32',y:20.3},{x:'18:23',y:20.2},{x:'18:51',y:20.1},{x:'19:15',y:20.0},
+      {x:'19:25',y:19.9},{x:'19:48',y:19.8},{x:'20:44',y:19.6},{x:'20:56',y:19.5},{x:'21:59',y:19.4},
+      {x:'22:18',y:19.3},{x:'23:41',y:19.2},{x:'00:44',y:19.1},{x:'00:59',y:19.0},{x:'01:31',y:19.1},
+      {x:'02:03',y:19.0},{x:'02:21',y:18.8},{x:'02:52',y:18.9},{x:'03:24',y:18.8},{x:'03:41',y:18.7},
+      {x:'05:04',y:18.5},{x:'05:21',y:18.6},{x:'05:52',y:18.5},{x:'06:25',y:18.4},{x:'06:41',y:18.3},
+      {x:'08:16',y:18.4},
+    ]
+  },
+  roof: {
+    label: 'Roof Cavity Temperature', unit: '°C', color: '#f06050',
+    data: [
+      {x:'09:04',y:20.3},{x:'09:05',y:20.5},{x:'09:07',y:20.7},{x:'09:09',y:20.9},{x:'09:18',y:20.7},
+      {x:'09:22',y:20.5},{x:'09:26',y:20.3},{x:'09:37',y:20.5},{x:'09:44',y:21.1},{x:'09:47',y:21.3},
+      {x:'09:52',y:21.7},{x:'09:57',y:21.5},{x:'10:21',y:21.7},{x:'11:39',y:25.4},{x:'11:40',y:25.6},
+      {x:'11:41',y:25.8},{x:'11:43',y:26.0},{x:'11:51',y:26.4},{x:'11:53',y:26.6},{x:'12:01',y:26.5},
+      {x:'12:05',y:26.7},{x:'12:11',y:26.9},{x:'12:15',y:27.1},{x:'12:17',y:27.3},{x:'12:19',y:27.5},
+      {x:'12:20',y:27.7},{x:'12:21',y:27.9},{x:'12:23',y:28.1},{x:'12:24',y:28.3},{x:'12:25',y:28.5},
+      {x:'12:26',y:28.7},{x:'12:32',y:28.8},{x:'12:38',y:28.6},{x:'12:40',y:28.4},{x:'12:51',y:28.6},
+      {x:'12:56',y:28.8},{x:'13:04',y:29.0},{x:'13:05',y:29.2},{x:'13:06',y:29.4},{x:'13:08',y:29.6},
+      {x:'13:10',y:29.8},{x:'13:16',y:30.0},{x:'13:24',y:30.2},{x:'13:27',y:30.4},{x:'13:36',y:30.6},
+      {x:'13:42',y:30.8},{x:'13:51',y:31.2},{x:'13:56',y:31.4},{x:'14:00',y:31.6},{x:'14:08',y:31.8},
+      {x:'14:17',y:32.0},{x:'14:27',y:31.8},{x:'14:40',y:31.1},{x:'14:44',y:30.9},{x:'15:10',y:30.7},
+      {x:'15:26',y:30.5},{x:'15:33',y:30.3},{x:'15:37',y:30.1},{x:'15:43',y:29.9},{x:'15:49',y:29.7},
+      {x:'15:56',y:29.5},{x:'16:04',y:29.3},{x:'16:07',y:29.1},{x:'16:11',y:28.9},{x:'16:14',y:28.7},
+      {x:'16:19',y:28.5},{x:'16:25',y:28.3},{x:'16:30',y:28.1},{x:'16:36',y:27.9},{x:'16:40',y:27.7},
+      {x:'16:43',y:27.5},{x:'16:46',y:27.3},{x:'16:49',y:27.1},{x:'16:54',y:26.9},{x:'16:58',y:26.7},
+      {x:'17:02',y:26.5},{x:'17:06',y:26.3},
+    ]
+  },
+  humidity: {
+    label: 'Kitchen Humidity', unit: '%', color: '#5b9cf0',
+    isHumidity: true,
+    data: [
+      {x:'09:04',y:65.5},{x:'09:08',y:64.9},{x:'09:14',y:64.3},{x:'09:19',y:64.8},{x:'09:29',y:65.4},
+      {x:'09:35',y:64.8},{x:'09:44',y:65.3},{x:'09:58',y:64.8},{x:'10:04',y:65.3},{x:'10:08',y:65.9},
+      {x:'10:18',y:65.4},{x:'10:27',y:66.1},{x:'10:34',y:66.7},{x:'10:36',y:67.3},{x:'10:37',y:68.0},
+      {x:'10:39',y:68.5},{x:'10:41',y:69.2},{x:'10:43',y:69.7},{x:'10:44',y:69.2},{x:'10:49',y:68.6},
+      {x:'10:53',y:69.1},{x:'11:15',y:68.6},{x:'11:21',y:68.1},{x:'11:35',y:68.7},{x:'11:41',y:69.3},
+      {x:'11:43',y:68.7},{x:'11:48',y:69.2},{x:'11:50',y:69.8},{x:'11:58',y:69.0},{x:'12:02',y:69.6},
+      {x:'12:13',y:69.0},{x:'12:18',y:68.3},{x:'12:23',y:67.8},{x:'12:42',y:67.2},{x:'12:58',y:66.6},
+      {x:'13:17',y:66.1},{x:'13:31',y:65.5},{x:'13:41',y:64.9},{x:'14:13',y:64.4},{x:'14:21',y:65.0},
+      {x:'14:29',y:64.4},{x:'14:31',y:63.9},{x:'14:36',y:63.3},{x:'14:39',y:62.8},{x:'14:46',y:62.2},
+      {x:'14:55',y:61.6},{x:'15:08',y:61.1},{x:'15:16',y:61.6},{x:'15:19',y:61.1},{x:'15:36',y:60.6},
+      {x:'15:53',y:61.2},{x:'15:56',y:60.7},{x:'16:10',y:60.2},{x:'16:16',y:59.6},{x:'16:19',y:60.2},
+      {x:'16:20',y:59.7},{x:'16:23',y:60.2},{x:'16:28',y:59.7},{x:'16:34',y:59.1},{x:'16:46',y:59.7},
+      {x:'16:48',y:59.2},{x:'16:50',y:59.7},{x:'17:22',y:59.9},{x:'17:28',y:59.4},{x:'17:39',y:59.9},
+      {x:'17:42',y:59.2},{x:'17:47',y:59.8},{x:'17:56',y:59.2},{x:'18:09',y:59.7},{x:'18:11',y:59.0},
+      {x:'18:26',y:59.7},{x:'18:29',y:60.2},{x:'18:32',y:60.8},{x:'18:35',y:61.3},{x:'18:54',y:61.9},
+      {x:'19:05',y:62.5},{x:'19:12',y:63.0},{x:'19:43',y:63.2},{x:'20:47',y:63.4},{x:'21:09',y:63.9},
+      {x:'21:41',y:64.1},{x:'22:13',y:64.6},{x:'22:45',y:64.7},{x:'23:12',y:65.2},{x:'23:40',y:65.8},
+      {x:'00:12',y:65.6},{x:'00:44',y:65.9},{x:'01:10',y:66.5},{x:'01:23',y:65.9},{x:'01:43',y:66.5},
+      {x:'01:44',y:66.0},{x:'01:55',y:66.5},{x:'02:18',y:67.0},{x:'02:36',y:67.5},{x:'03:30',y:68.0},
+      {x:'03:34',y:67.5},{x:'03:37',y:68.0},{x:'04:41',y:67.7},{x:'04:44',y:68.2},{x:'05:16',y:68.6},
+      {x:'05:48',y:68.4},{x:'06:20',y:68.5},{x:'06:51',y:68.7},{x:'07:23',y:68.6},{x:'07:55',y:68.9},
+      {x:'08:05',y:69.5},{x:'08:19',y:70.0},{x:'08:50',y:69.8},
+    ]
+  },
+};
+
+const SENSOR_ORDER = ['outside','lounge','study','kitchen','roof','humidity'];
+const SENSOR_DOT_COLORS = {
+  outside:'#f5a623', lounge:'#2dd4bf', study:'#5b9cf0',
+  kitchen:'#3ddc84', roof:'#f06050', humidity:'#5b9cf0'
+};
+
+let popupChartInstance = null;
+let currentSensorIdx = 0;
+
+function openChart(key) {
+  currentSensorIdx = SENSOR_ORDER.indexOf(key);
+  renderPopupChart(key);
+  document.getElementById('chartPopup').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeChart() {
+  document.getElementById('chartPopup').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeChartOnBackdrop(e) {
+  if (e.target === document.getElementById('chartPopup')) closeChart();
+}
+
+function navigateChart(dir) {
+  currentSensorIdx = (currentSensorIdx + dir + SENSOR_ORDER.length) % SENSOR_ORDER.length;
+  renderPopupChart(SENSOR_ORDER[currentSensorIdx]);
+}
+
+function renderPopupChart(key) {
+  const sensor = SENSOR_HISTORY[key];
+  if (!sensor) return;
+
+  // Header
+  document.getElementById('chartPopupTitle').textContent = sensor.label;
+  document.getElementById('chartPopupSub').textContent = '24-hour trend · last updated ' +
+    new Date().toLocaleTimeString('en-AU', {hour:'2-digit',minute:'2-digit',hour12:false});
+  document.getElementById('chartPopupTitle').style.color = sensor.color;
+
+  // Nav state
+  document.getElementById('chartPrev').style.opacity = '1';
+  document.getElementById('chartNext').style.opacity = '1';
+
+  // Dots
+  const dotsEl = document.getElementById('chartDots');
+  dotsEl.innerHTML = SENSOR_ORDER.map((k, i) => `
+    <div class="chart-dot${i === currentSensorIdx ? ' active' : ''}"
+         style="${i === currentSensorIdx ? `background:${SENSOR_DOT_COLORS[k]}` : ''}"
+         onclick="currentSensorIdx=${i};renderPopupChart('${k}')"></div>
+  `).join('');
+
+  // Stats
+  const vals = sensor.data.map(d => d.y);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const avg = (vals.reduce((a,b)=>a+b,0)/vals.length);
+  const latest = vals[vals.length-1];
+  const u = sensor.unit;
+  document.getElementById('chartStats').innerHTML = `
+    <div class="chart-stat">
+      <div class="chart-stat-label">Current</div>
+      <div class="chart-stat-val" style="color:${sensor.color}">${latest.toFixed(1)}${u}</div>
+    </div>
+    <div class="chart-stat">
+      <div class="chart-stat-label">Min 24h</div>
+      <div class="chart-stat-val">${min.toFixed(1)}${u}</div>
+    </div>
+    <div class="chart-stat">
+      <div class="chart-stat-label">Max 24h</div>
+      <div class="chart-stat-val">${max.toFixed(1)}${u}</div>
+    </div>
+    <div class="chart-stat">
+      <div class="chart-stat-label">Avg 24h</div>
+      <div class="chart-stat-val">${avg.toFixed(1)}${u}</div>
+    </div>
+  `;
+
+  // Chart
+  const canvas = document.getElementById('popupChart');
+  if (popupChartInstance) { popupChartInstance.destroy(); popupChartInstance = null; }
+
+  const yMin = sensor.isHumidity ? 30 : Math.floor(min - 1.5);
+  const yMax = sensor.isHumidity ? 100 : Math.ceil(max + 1.5);
+
+  const plugins = [];
+  // Comfort band for humidity
+  if (sensor.isHumidity) {
+    plugins.push({
+      id: 'comfortBand',
+      beforeDraw(chart) {
+        const { ctx, chartArea: a, scales: { y } } = chart;
+        ctx.save();
+        ctx.fillStyle = 'rgba(61,220,132,0.06)';
+        const y40 = y.getPixelForValue(40);
+        const y60 = y.getPixelForValue(60);
+        ctx.fillRect(a.left, y60, a.width, y40 - y60);
+        ctx.strokeStyle = 'rgba(61,220,132,0.2)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(a.left, y40); ctx.lineTo(a.right, y40); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(a.left, y60); ctx.lineTo(a.right, y60); ctx.stroke();
+        ctx.restore();
+      }
+    });
+  }
+
+  popupChartInstance = new Chart(canvas, {
+    type: 'line',
+    plugins,
+    data: {
+      datasets: [{
+        label: sensor.label,
+        data: sensor.data,
+        borderColor: sensor.color,
+        backgroundColor: ({
+          '#f5a623': 'rgba(245,166,35,0.08)',
+          '#2dd4bf': 'rgba(45,212,191,0.08)',
+          '#5b9cf0': 'rgba(91,156,240,0.08)',
+          '#3ddc84': 'rgba(61,220,132,0.08)',
+          '#f06050': 'rgba(240,96,80,0.08)',
+        })[sensor.color] || 'rgba(255,255,255,0.05)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#181c27',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleFont: { family: "'DM Mono', monospace", size: 11 },
+          bodyFont:  { family: "'DM Mono', monospace", size: 12 },
+          titleColor: 'rgba(255,255,255,0.4)',
+          bodyColor: '#eef0f5',
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y.toFixed(1)}${u}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'category',
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: 'rgba(255,255,255,0.3)',
+            font: { family: "'DM Mono', monospace", size: 10 },
+            maxTicksLimit: 10,
+            maxRotation: 0,
+          }
+        },
+        y: {
+          min: yMin, max: yMax,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: 'rgba(255,255,255,0.3)',
+            font: { family: "'DM Mono', monospace", size: 10 },
+            callback: v => v + u
+          }
+        }
+      }
+    }
+  });
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  const popup = document.getElementById('chartPopup');
+  if (!popup.classList.contains('open')) return;
+  if (e.key === 'Escape') closeChart();
+  if (e.key === 'ArrowLeft')  navigateChart(-1);
+  if (e.key === 'ArrowRight') navigateChart(1);
+});
+
+// Swipe navigation on touch devices
+(function() {
+  let startX = 0;
+  const panel = document.querySelector('.chart-popup-panel');
+  document.getElementById('chartPopup').addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+  document.getElementById('chartPopup').addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 50) navigateChart(dx < 0 ? 1 : -1);
+  }, { passive: true });
+})();
+
 (async () => {
   await resolveToken();
 
@@ -1107,6 +1644,274 @@ async function applyPreset(preset) {
   // Re-sync state on any failure
   if (!allOk) setTimeout(loadState, 500);
 }
+
+// ══════════════════════════════════════════════
+// CHART POPUP
+// ══════════════════════════════════════════════
+
+// UTC ISO → AEST label (UTC+11 on 29 Mar 2026)
+function toAEST(utc) {
+  const d = new Date(utc);
+  d.setMinutes(d.getMinutes() + d.getTimezoneOffset() + 660); // +11h
+  return d.toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', hour12:false });
+}
+
+// Thin an array of {x,y} points to at most `max` evenly spaced samples
+function thin(pts, max) {
+  if (pts.length <= max) return pts;
+  const step = pts.length / max;
+  return Array.from({ length: max }, (_, i) => pts[Math.round(i * step)]);
+}
+
+// ── REAL 24h HISTORY (HA → AEST, thinned to ~30 pts each) ──
+const SENSOR_DATA = {
+  outside: thin([
+    {x:'18:50',y:18.2},{x:'19:09',y:18},{x:'19:36',y:17.8},{x:'20:12',y:17.6},
+    {x:'20:37',y:17.4},{x:'21:59',y:17.2},{x:'23:59',y:17.1},{x:'00:11',y:16.9},
+    {x:'01:11',y:16.8},{x:'03:02',y:16.6},{x:'04:02',y:16.7},{x:'05:02',y:16.6},
+    {x:'05:36',y:16.4},{x:'06:35',y:16.3},{x:'08:27',y:16.5},{x:'08:59',y:16.7},
+    {x:'09:11',y:16.9},{x:'09:22',y:17.1},{x:'09:27',y:17.3},{x:'09:39',y:17.5},
+    {x:'09:46',y:17.7},{x:'09:57',y:17.9},{x:'10:01',y:18.1},{x:'10:27',y:17.9},
+    {x:'11:19',y:18.1},{x:'11:38',y:18.3},{x:'11:43',y:18.4},{x:'11:59',y:18.6},
+    {x:'12:04',y:18.8},{x:'12:08',y:19.0},{x:'12:15',y:19.1},{x:'12:30',y:19.2},
+    {x:'12:40',y:19.4},{x:'12:46',y:19.6},{x:'13:02',y:19.8},{x:'13:09',y:20.0},
+    {x:'13:36',y:19.9},{x:'13:47',y:19.7},{x:'14:12',y:19.9},{x:'14:15',y:20.0},
+    {x:'14:21',y:19.8},{x:'15:18',y:19.9},{x:'16:12',y:19.7},{x:'16:22',y:19.8},
+    {x:'16:45',y:19.6},{x:'17:04',y:19.5},{x:'17:32',y:19.4},{x:'17:46',y:19.3},
+    {x:'18:23',y:19.1},{x:'18:49',y:19.0}
+  ], 32),
+
+  lounge: thin([
+    {x:'18:50',y:20.5},{x:'13:15',y:20.1},{x:'13:57',y:20.3},{x:'18:47',y:20.4}
+  ], 32),
+
+  study: thin([
+    {x:'18:50',y:21.2},{x:'19:33',y:21.1},{x:'20:28',y:21.0},{x:'21:23',y:20.9},
+    {x:'23:14',y:20.8},{x:'01:04',y:20.7},{x:'02:00',y:20.6},{x:'04:46',y:20.5},
+    {x:'05:41',y:20.4},{x:'07:31',y:20.3},{x:'08:27',y:20.2},{x:'10:07',y:20.0},
+    {x:'10:18',y:19.8},{x:'10:28',y:19.6},{x:'10:41',y:19.4},{x:'10:54',y:19.2},
+    {x:'11:06',y:19.0},{x:'11:21',y:18.8},{x:'11:37',y:19.0},{x:'11:45',y:19.1},
+    {x:'11:48',y:19.3},{x:'11:55',y:19.5},{x:'12:01',y:19.7},{x:'12:08',y:19.9},
+    {x:'12:14',y:20.1},{x:'12:30',y:20.3},{x:'13:08',y:20.5},{x:'13:51',y:20.7},
+    {x:'14:12',y:20.9},{x:'14:32',y:21.1},{x:'14:53',y:21.3}
+  ], 32),
+
+  kitchen: thin([
+    {x:'18:50',y:20.2},{x:'19:51',y:20.0},{x:'20:15',y:19.9},{x:'20:48',y:19.8},
+    {x:'21:44',y:19.6},{x:'21:56',y:19.5},{x:'22:59',y:19.4},{x:'23:18',y:19.3},
+    {x:'00:41',y:19.2},{x:'01:44',y:19.1},{x:'01:59',y:19.0},{x:'02:31',y:19.1},
+    {x:'03:03',y:19.0},{x:'03:23',y:18.8},{x:'04:00',y:18.9},{x:'04:47',y:18.8},
+    {x:'05:04',y:18.7},{x:'05:21',y:18.5},{x:'05:52',y:18.6},{x:'06:24',y:18.5},
+    {x:'06:41',y:18.4},{x:'08:16',y:18.3},{x:'08:48',y:18.4},{x:'09:26',y:18.6},
+    {x:'09:36',y:18.7},{x:'10:08',y:18.6},{x:'10:12',y:18.5},{x:'10:19',y:18.4},
+    {x:'10:25',y:18.3},{x:'10:30',y:18.2},{x:'10:36',y:18.1},{x:'10:42',y:17.9},
+    {x:'11:05',y:17.8},{x:'11:31',y:17.7},{x:'11:38',y:17.8},{x:'11:40',y:17.9},
+    {x:'11:42',y:18.1},{x:'11:44',y:18.2},{x:'11:45',y:18.3},{x:'11:47',y:18.5},
+    {x:'11:48',y:18.6},{x:'11:50',y:18.7},{x:'11:52',y:18.8},{x:'11:53',y:18.9},
+    {x:'11:55',y:19.1},{x:'11:58',y:19.2},{x:'12:00',y:19.3},{x:'12:03',y:19.4},
+    {x:'12:05',y:19.5},{x:'12:07',y:19.6},{x:'12:09',y:19.8},{x:'12:11',y:19.9},
+    {x:'12:14',y:20.0},{x:'12:17',y:20.1},{x:'13:19',y:20.0},{x:'13:30',y:20.1},
+    {x:'13:34',y:20.2},{x:'13:47',y:20.3},{x:'13:56',y:20.5},{x:'14:21',y:20.6},
+    {x:'14:30',y:20.7},{x:'14:37',y:20.8},{x:'14:46',y:20.9},{x:'15:00',y:21.0},
+    {x:'15:14',y:21.1},{x:'15:57',y:21.0},{x:'16:07',y:20.9},{x:'16:16',y:20.8},
+    {x:'17:35',y:20.7},{x:'17:55',y:20.6},{x:'18:04',y:20.5},{x:'18:12',y:20.4},
+    {x:'18:37',y:20.3}
+  ], 32),
+
+  roof: [
+    // Only one data point available — show as single marker with note
+    {x:'18:50',y:26.3}
+  ],
+
+  humidity: thin([
+    {x:'18:50',y:61.3},{x:'18:54',y:61.9},{x:'19:05',y:62.5},{x:'19:12',y:63.0},
+    {x:'19:43',y:63.2},{x:'20:47',y:63.4},{x:'21:09',y:63.9},{x:'21:41',y:64.1},
+    {x:'22:13',y:64.6},{x:'22:40',y:65.2},{x:'23:12',y:65.8},{x:'00:10',y:65.6},
+    {x:'01:10',y:66.5},{x:'01:43',y:66.5},{x:'02:10',y:66.5},{x:'02:55',y:67.5},
+    {x:'03:30',y:68.0},{x:'04:37',y:68.0},{x:'05:44',y:68.2},{x:'05:47',y:68.6},
+    {x:'06:16',y:68.4},{x:'06:48',y:68.5},{x:'07:19',y:68.7},{x:'07:51',y:68.6},
+    {x:'08:23',y:68.9},{x:'08:55',y:69.5},{x:'09:05',y:70.0},{x:'09:19',y:69.8},
+    {x:'09:50',y:70.0},{x:'10:22',y:69.6},{x:'10:54',y:69.0},{x:'10:57',y:68.4},
+    {x:'10:59',y:67.9},{x:'11:02',y:67.3},{x:'11:03',y:66.7},{x:'11:04',y:66.1},
+    {x:'11:07',y:65.6},{x:'11:09',y:65.1},{x:'11:11',y:64.5},{x:'11:14',y:64.0},
+    {x:'11:16',y:63.4},{x:'11:19',y:62.8},{x:'11:20',y:62.3},{x:'11:24',y:61.7},
+    {x:'11:26',y:61.0},{x:'11:28',y:60.5},{x:'11:33',y:60.0},{x:'11:36',y:59.4},
+    {x:'11:41',y:58.9},{x:'11:45',y:58.3},{x:'11:47',y:57.8},{x:'11:51',y:57.2},
+    {x:'11:56',y:56.7},{x:'12:00',y:56.1},{x:'12:04',y:55.6},{x:'12:07',y:55.1},
+    {x:'12:12',y:54.5},{x:'12:17',y:53.9},{x:'12:23',y:53.4},{x:'12:30',y:52.8},
+    {x:'12:35',y:53.3},{x:'12:37',y:55.6},{x:'12:41',y:58.0},{x:'12:42',y:59.4},
+    {x:'12:43',y:60.1},{x:'12:45',y:61.9},{x:'12:50',y:62.4},{x:'12:58',y:62.0},
+    {x:'13:18',y:62.5},{x:'13:36',y:63.1},{x:'13:44',y:61.4},{x:'13:58',y:62.5},
+    {x:'14:02',y:62.0},{x:'14:05',y:61.4},{x:'14:09',y:60.9},{x:'14:22',y:60.9},
+    {x:'14:38',y:59.9}
+  ], 36),
+};
+
+// Sensor config: label, color, unit, y-axis bounds
+const SENSOR_CONFIG = {
+  outside:  { label:'Outside',  color:'#f5a623', unit:'°C', min:14, max:24, isTemp:true  },
+  lounge:   { label:'Lounge',   color:'#2dd4bf', unit:'°C', min:18, max:24, isTemp:true  },
+  study:    { label:'Study',    color:'#5b9cf0', unit:'°C', min:18, max:24, isTemp:true  },
+  kitchen:  { label:'Kitchen',  color:'#3ddc84', unit:'°C', min:17, max:23, isTemp:true  },
+  roof:     { label:'Roof',     color:'#f06050', unit:'°C', min:14, max:40, isTemp:true  },
+  humidity: { label:'Kitchen Humidity', color:'#5b9cf0', unit:'%', min:40, max:80, isTemp:false },
+};
+
+const SENSOR_ORDER = ['outside','lounge','study','kitchen','roof','humidity'];
+let currentChartSensor = null;
+let popupChartInstance  = null;
+
+// Build dot indicators
+function buildDots(activeSensor) {
+  const el = document.getElementById('chartDots');
+  el.innerHTML = SENSOR_ORDER.map(k => {
+    const cfg = SENSOR_CONFIG[k];
+    const active = k === activeSensor ? ' active' : '';
+    return `<div class="chart-dot${active}" style="${active ? `background:${cfg.color}` : ''}" onclick="openChart('${k}')" title="${cfg.label}"></div>`;
+  }).join('');
+}
+
+// Compute min/max/avg for stat bar
+function computeStats(pts) {
+  const vals = pts.map(p => p.y).filter(v => !isNaN(v));
+  if (!vals.length) return { min:'—', max:'—', avg:'—' };
+  const mn  = Math.min(...vals).toFixed(1);
+  const mx  = Math.max(...vals).toFixed(1);
+  const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+  return { min:mn, max:mx, avg };
+}
+
+function renderStats(pts, cfg) {
+  const s = computeStats(pts);
+  const el = document.getElementById('chartStats');
+  el.innerHTML = `
+    <div class="chart-stat"><div class="chart-stat-label">Min</div><div class="chart-stat-val" style="color:${cfg.color}">${s.min}${cfg.unit}</div></div>
+    <div class="chart-stat"><div class="chart-stat-label">Avg</div><div class="chart-stat-val" style="color:${cfg.color}">${s.avg}${cfg.unit}</div></div>
+    <div class="chart-stat"><div class="chart-stat-label">Max</div><div class="chart-stat-val" style="color:${cfg.color}">${s.max}${cfg.unit}</div></div>
+    <div class="chart-stat"><div class="chart-stat-label">Now</div><div class="chart-stat-val" style="color:${cfg.color}" id="chartStatNow">—</div></div>`;
+  // Fill "Now" from live tile
+  const liveMap = { outside:'val-outside', lounge:'val-lounge', study:'val-study', kitchen:'val-kitchen', roof:'val-roof', humidity:'val-humidity' };
+  const liveEl = document.getElementById(liveMap[currentChartSensor]);
+  if (liveEl) document.getElementById('chartStatNow').textContent = liveEl.textContent + cfg.unit;
+}
+
+function openChart(sensorKey) {
+  currentChartSensor = sensorKey;
+  const cfg  = SENSOR_CONFIG[sensorKey];
+  const pts  = SENSOR_DATA[sensorKey];
+
+  // Update header
+  document.getElementById('chartPopupTitle').textContent = cfg.label;
+  document.getElementById('chartPopupSub').textContent   = '24-hour trend · last updated just now';
+
+  // Dots + stats
+  buildDots(sensorKey);
+  renderStats(pts, cfg);
+
+  // Destroy previous chart
+  if (popupChartInstance) { popupChartInstance.destroy(); popupChartInstance = null; }
+
+  // Warn if sparse data
+  const isSparse = pts.length < 4;
+  const canvas   = document.getElementById('popupChart');
+
+  const gradient = canvas.getContext('2d').createLinearGradient(0, 0, 0, 260);
+  gradient.addColorStop(0, cfg.color + '28');
+  gradient.addColorStop(1, cfg.color + '00');
+
+  popupChartInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: pts.map(p => p.x),
+      datasets: [{
+        label: cfg.label,
+        data: pts.map(p => p.y),
+        borderColor: cfg.color,
+        backgroundColor: isSparse ? 'transparent' : gradient,
+        borderWidth: 2,
+        fill: !isSparse,
+        tension: 0.4,
+        pointRadius: pts.length < 8 ? 5 : 0,
+        pointHoverRadius: 5,
+        pointBackgroundColor: cfg.color,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 220 },
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#181c27',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleFont: { family:"'DM Mono', monospace", size:11 },
+          bodyFont:  { family:"'DM Mono', monospace", size:12 },
+          titleColor: 'rgba(255,255,255,0.45)',
+          bodyColor:  '#eef0f5',
+          callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)}${cfg.unit}` },
+        },
+        ...(isSparse ? {
+          annotation: {} // no annotation plugin loaded, just no-op
+        } : {})
+      },
+      scales: {
+        x: {
+          grid:  { color:'rgba(255,255,255,0.04)' },
+          ticks: { color:'rgba(255,255,255,0.3)', font:{ family:"'DM Mono', monospace", size:10 }, maxTicksLimit:8, maxRotation:0 }
+        },
+        y: {
+          min: cfg.min,
+          max: cfg.max,
+          grid:  { color:'rgba(255,255,255,0.05)' },
+          ticks: { color:'rgba(255,255,255,0.3)', font:{ family:"'DM Mono', monospace", size:10 }, callback: v => v + cfg.unit }
+        }
+      }
+    }
+  });
+
+  // Show popup
+  const popup = document.getElementById('chartPopup');
+  popup.classList.add('open');
+  document.addEventListener('keydown', onPopupKeydown);
+}
+
+function closeChart() {
+  document.getElementById('chartPopup').classList.remove('open');
+  document.removeEventListener('keydown', onPopupKeydown);
+}
+
+function closeChartOnBackdrop(e) {
+  if (e.target === document.getElementById('chartPopup')) closeChart();
+}
+
+function navigateChart(dir) {
+  const idx = SENSOR_ORDER.indexOf(currentChartSensor);
+  const next = SENSOR_ORDER[(idx + dir + SENSOR_ORDER.length) % SENSOR_ORDER.length];
+  openChart(next);
+}
+
+function onPopupKeydown(e) {
+  if (e.key === 'Escape')      closeChart();
+  if (e.key === 'ArrowRight')  navigateChart(1);
+  if (e.key === 'ArrowLeft')   navigateChart(-1);
+}
+
+// Touch swipe for mobile/tablet
+(function() {
+  let startX = null;
+  const panel = document.querySelector('.chart-popup-panel');
+  panel.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive:true });
+  panel.addEventListener('touchend', e => {
+    if (startX === null) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 60) navigateChart(dx < 0 ? 1 : -1);
+    startX = null;
+  });
+})();
 </script>
-</body>
-</html>
+
+
+</body></html>

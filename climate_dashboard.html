@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0057)file:///C:/Users/stuar/Downloads/climate_dashboard_2.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Home Climate — Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link href="./climate_dashboard_files/css2" rel="stylesheet">
+<script src="./climate_dashboard_files/chart.umd.min.js.download"></script>
 <style>
   :root {
     --bg: #0d0f14;
@@ -695,6 +695,86 @@
     font-weight: 500;
     cursor: pointer;
   }
+  /* ── TAPPABLE TEMP CARDS ── */
+  .temp-card { cursor: pointer; transition: border-color 0.15s, transform 0.12s; }
+  .temp-card:hover  { border-color: var(--border-hi); }
+  .temp-card:active { transform: scale(0.98); }
+  .card-hint {
+    font-family: var(--font-mono); font-size: 9px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-top: 6px; opacity: 0.5; transition: opacity 0.15s;
+  }
+  .temp-card:hover .card-hint { opacity: 1; }
+
+  /* ── 7-DAY STAT POPUP ── */
+  .stat-popup {
+    position: fixed; inset: 0;
+    background: rgba(7,9,13,0.82);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    z-index: 600; display: flex; align-items: center; justify-content: center;
+    padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+  }
+  .stat-popup.open { opacity: 1; pointer-events: all; }
+  .stat-popup-panel {
+    background: var(--bg2); border: 1px solid var(--border-hi);
+    border-radius: 16px; width: min(820px, 100%); max-height: min(540px, 90dvh);
+    display: flex; flex-direction: column; overflow: hidden;
+    transform: translateY(14px) scale(0.98); transition: transform 0.22s ease;
+  }
+  .stat-popup.open .stat-popup-panel { transform: translateY(0) scale(1); }
+  .stat-popup-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 18px 22px 14px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0; gap: 12px;
+  }
+  .stat-popup-title { font-size: 18px; font-weight: 600; letter-spacing: -0.4px; }
+  .stat-popup-sub {
+    font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px;
+  }
+  .stat-popup-nav { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+  .stat-nav-btn {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--muted); font-size: 17px; width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.12s; font-family: var(--font-mono);
+    -webkit-tap-highlight-color: transparent; user-select: none;
+  }
+  .stat-nav-btn:hover { color: var(--amber); border-color: var(--amber); }
+  .stat-close-btn {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--muted); font-size: 13px; width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.12s; -webkit-tap-highlight-color: transparent;
+  }
+  .stat-close-btn:hover { color: var(--text); border-color: var(--border-hi); }
+  .stat-popup-dots {
+    display: flex; gap: 6px; justify-content: center; padding: 8px 0 0; flex-shrink: 0;
+  }
+  .stat-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
+    opacity: 0.3; cursor: pointer; transition: opacity 0.15s, background 0.15s;
+  }
+  .stat-dot.active { opacity: 1; }
+  .stat-popup-body { flex: 1; padding: 12px 22px; min-height: 0; position: relative; }
+  .stat-popup-body canvas { width: 100% !important; height: 100% !important; }
+  .stat-popup-bar { display: flex; border-top: 1px solid var(--border); flex-shrink: 0; }
+  .stat-cell { flex: 1; padding: 10px 16px; border-right: 1px solid var(--border); }
+  .stat-cell:last-child { border-right: none; }
+  .stat-cell-label {
+    font-family: var(--font-mono); font-size: 9px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); margin-bottom: 2px;
+  }
+  .stat-cell-val { font-size: 15px; font-weight: 300; letter-spacing: -0.5px; }
+  @media (max-width: 480px) {
+    .stat-popup { padding: 0; align-items: flex-end; }
+    .stat-popup-panel { width: 100%; max-height: 78dvh; border-radius: 16px 16px 0 0; }
+    .stat-popup-header { padding: 14px 16px 10px; }
+    .stat-popup-body { padding: 10px 14px; }
+    .stat-cell { padding: 8px 10px; }
+    .stat-cell-val { font-size: 13px; }
+  }
+  @media (max-width: 700px) { .stat-popup-sub { display: none; } }
 </style>
 </head>
 <body>
@@ -708,10 +788,7 @@
       <div class="sub" style="margin-top:2px">
         <span id="haStatus" style="color:var(--muted)">connecting…</span>
         &nbsp;·&nbsp;
-        <a href="#" onclick="localStorage.removeItem('ha_climate_token');location.reload();return false;"
-           style="color:var(--muted);text-decoration:none"
-           onmouseover="this.style.color='var(--amber)'"
-           onmouseout="this.style.color='var(--muted)'">reset token</a>
+        <a href="file:///C:/Users/stuar/Downloads/climate_dashboard_2.html#" onclick="localStorage.removeItem(&#39;ha_climate_token&#39;);location.reload();return false;" style="color:var(--muted);text-decoration:none" onmouseover="this.style.color=&#39;var(--amber)&#39;" onmouseout="this.style.color=&#39;var(--muted)&#39;">reset token</a>
       </div>
     </div>
     <div class="header-right">
@@ -734,35 +811,39 @@
   <div class="section-divider">Current temperatures</div>
   <div class="grid-top">
 
-    <div class="card temp-card c-amber">
+    <div class="card temp-card c-amber" onclick="openStatPopup(&#39;outside&#39;)">
       <div class="card-accent-bar"></div>
       <div class="card-label">Outside</div>
       <div class="big-temp"><span class="val-outside">—</span><span class="unit">°</span></div>
       <div class="trend trend-dn" id="trend-outside">—</div>
+      <div class="card-hint">↗ 7-day trend</div>
     </div>
 
-    <div class="card temp-card c-teal">
+    <div class="card temp-card c-teal" onclick="openStatPopup(&#39;lounge&#39;)">
       <div class="card-accent-bar"></div>
       <div class="card-label">Lounge</div>
       <div class="big-temp"><span class="val-lounge">—</span><span class="unit">°</span></div>
       <div class="trend" id="trend-lounge">—</div>
+      <div class="card-hint">↗ 7-day trend</div>
     </div>
 
-    <div class="card temp-card c-blue">
+    <div class="card temp-card c-blue" onclick="openStatPopup(&#39;study&#39;)">
       <div class="card-accent-bar"></div>
       <div class="card-label">Study</div>
       <div class="big-temp"><span class="val-study">—</span><span class="unit">°</span></div>
       <div class="trend" id="trend-study">—</div>
+      <div class="card-hint">↗ 7-day trend</div>
     </div>
 
-    <div class="card temp-card c-green">
+    <div class="card temp-card c-green" onclick="openStatPopup(&#39;kitchen&#39;)">
       <div class="card-accent-bar"></div>
       <div class="card-label">Kitchen</div>
       <div class="big-temp"><span class="val-kitchen">—</span><span class="unit">°</span></div>
       <div class="trend" id="trend-kitchen">—</div>
+      <div class="card-hint">↗ 7-day trend</div>
     </div>
 
-    <div class="card temp-card c-coral">
+    <div class="card temp-card c-coral" onclick="openStatPopup(&#39;roof&#39;)">
       <div class="card-accent-bar"></div>
       <div class="card-label">Roof cavity</div>
       <div class="big-temp"><span class="val-roof">—</span><span class="unit">°</span></div>
@@ -770,6 +851,7 @@
       <div class="roof-bar" style="margin-top:8px">
         <div class="roof-fill" id="roof-bar-fill" style="width:0%;background:var(--coral)"></div>
       </div>
+      <div class="card-hint">↗ 7-day trend</div>
     </div>
 
   </div>
@@ -807,12 +889,12 @@
       <div class="master-controls">
         <div class="master-label">System mode</div>
         <div class="mode-buttons">
-          <button class="mode-btn active-off" id="btn-off"  onclick="setMode('off')">Off</button>
-          <button class="mode-btn"            id="btn-cool" onclick="setMode('cool')">Cool</button>
-          <button class="mode-btn"            id="btn-heat" onclick="setMode('heat')">Heat</button>
-          <button class="mode-btn"            id="btn-auto" onclick="setMode('heat_cool')">Auto</button>
-          <button class="mode-btn"            id="btn-fan"  onclick="setMode('fan_only')">Fan</button>
-          <button class="mode-btn"            id="btn-dry"  onclick="setMode('dry')">Dry</button>
+          <button class="mode-btn active-off" id="btn-off" onclick="setMode(&#39;off&#39;)">Off</button>
+          <button class="mode-btn" id="btn-cool" onclick="setMode(&#39;cool&#39;)">Cool</button>
+          <button class="mode-btn" id="btn-heat" onclick="setMode(&#39;heat&#39;)">Heat</button>
+          <button class="mode-btn" id="btn-auto" onclick="setMode(&#39;heat_cool&#39;)">Auto</button>
+          <button class="mode-btn" id="btn-fan" onclick="setMode(&#39;fan_only&#39;)">Fan</button>
+          <button class="mode-btn" id="btn-dry" onclick="setMode(&#39;dry&#39;)">Dry</button>
         </div>
 
         <div class="setpoint-row">
@@ -822,10 +904,10 @@
 
         <div class="fan-row">
           <span class="fan-label">Fan</span>
-          <button class="fan-btn active" id="fan-auto"   onclick="setFan('auto')">Auto</button>
-          <button class="fan-btn"        id="fan-low"    onclick="setFan('low')">Low</button>
-          <button class="fan-btn"        id="fan-medium" onclick="setFan('medium')">Med</button>
-          <button class="fan-btn"        id="fan-high"   onclick="setFan('high')">High</button>
+          <button class="fan-btn active" id="fan-auto" onclick="setFan(&#39;auto&#39;)">Auto</button>
+          <button class="fan-btn" id="fan-low" onclick="setFan(&#39;low&#39;)">Low</button>
+          <button class="fan-btn" id="fan-medium" onclick="setFan(&#39;medium&#39;)">Med</button>
+          <button class="fan-btn" id="fan-high" onclick="setFan(&#39;high&#39;)">High</button>
         </div>
       </div>
 
@@ -841,13 +923,13 @@
           </div>
           <div class="zone-row-bottom">
             <div class="zone-setpoint">
-              <button class="sp-btn" onclick="adjustZoneSetpoint('living',-0.5)">−</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;living&#39;,-0.5)">−</button>
               <div class="sp-val" id="sp-living">22.5°</div>
-              <button class="sp-btn" onclick="adjustZoneSetpoint('living',0.5)">+</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;living&#39;,0.5)">+</button>
             </div>
             <div class="zone-toggle">
-              <button class="zt-btn zone-on" id="zon-living-on"  onclick="toggleZone('living','heat_cool')">On</button>
-              <button class="zt-btn"         id="zon-living-off" onclick="toggleZone('living','off')">Off</button>
+              <button class="zt-btn zone-on" id="zon-living-on" onclick="toggleZone(&#39;living&#39;,&#39;heat_cool&#39;)">On</button>
+              <button class="zt-btn" id="zon-living-off" onclick="toggleZone(&#39;living&#39;,&#39;off&#39;)">Off</button>
             </div>
           </div>
         </div>
@@ -860,13 +942,13 @@
           </div>
           <div class="zone-row-bottom">
             <div class="zone-setpoint">
-              <button class="sp-btn" onclick="adjustZoneSetpoint('study',-0.5)">−</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;study&#39;,-0.5)">−</button>
               <div class="sp-val" id="sp-study">22.5°</div>
-              <button class="sp-btn" onclick="adjustZoneSetpoint('study',0.5)">+</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;study&#39;,0.5)">+</button>
             </div>
             <div class="zone-toggle">
-              <button class="zt-btn"          id="zon-study-on"  onclick="toggleZone('study','heat_cool')">On</button>
-              <button class="zt-btn zone-off" id="zon-study-off" onclick="toggleZone('study','off')">Off</button>
+              <button class="zt-btn" id="zon-study-on" onclick="toggleZone(&#39;study&#39;,&#39;heat_cool&#39;)">On</button>
+              <button class="zt-btn zone-off" id="zon-study-off" onclick="toggleZone(&#39;study&#39;,&#39;off&#39;)">Off</button>
             </div>
           </div>
         </div>
@@ -879,13 +961,13 @@
           </div>
           <div class="zone-row-bottom">
             <div class="zone-setpoint">
-              <button class="sp-btn" onclick="adjustZoneSetpoint('bedroom',-0.5)">−</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;bedroom&#39;,-0.5)">−</button>
               <div class="sp-val" id="sp-bedroom">22.5°</div>
-              <button class="sp-btn" onclick="adjustZoneSetpoint('bedroom',0.5)">+</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;bedroom&#39;,0.5)">+</button>
             </div>
             <div class="zone-toggle">
-              <button class="zt-btn"          id="zon-bedroom-on"  onclick="toggleZone('bedroom','heat_cool')">On</button>
-              <button class="zt-btn zone-off" id="zon-bedroom-off" onclick="toggleZone('bedroom','off')">Off</button>
+              <button class="zt-btn" id="zon-bedroom-on" onclick="toggleZone(&#39;bedroom&#39;,&#39;heat_cool&#39;)">On</button>
+              <button class="zt-btn zone-off" id="zon-bedroom-off" onclick="toggleZone(&#39;bedroom&#39;,&#39;off&#39;)">Off</button>
             </div>
           </div>
         </div>
@@ -898,13 +980,13 @@
           </div>
           <div class="zone-row-bottom">
             <div class="zone-setpoint">
-              <button class="sp-btn" onclick="adjustZoneSetpoint('dining',-0.5)">−</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;dining&#39;,-0.5)">−</button>
               <div class="sp-val" id="sp-dining">22.5°</div>
-              <button class="sp-btn" onclick="adjustZoneSetpoint('dining',0.5)">+</button>
+              <button class="sp-btn" onclick="adjustZoneSetpoint(&#39;dining&#39;,0.5)">+</button>
             </div>
             <div class="zone-toggle">
-              <button class="zt-btn"          id="zon-dining-on"  onclick="toggleZone('dining','heat_cool')">On</button>
-              <button class="zt-btn zone-off" id="zon-dining-off" onclick="toggleZone('dining','off')">Off</button>
+              <button class="zt-btn" id="zon-dining-on" onclick="toggleZone(&#39;dining&#39;,&#39;heat_cool&#39;)">On</button>
+              <button class="zt-btn zone-off" id="zon-dining-off" onclick="toggleZone(&#39;dining&#39;,&#39;off&#39;)">Off</button>
             </div>
           </div>
         </div>
@@ -942,22 +1024,22 @@
     <div class="card">
       <div class="card-label">Scene presets</div>
       <div class="preset-grid">
-        <button class="preset-btn" onclick="applyPreset('away')">
+        <button class="preset-btn" onclick="applyPreset(&#39;away&#39;)">
           <div class="preset-icon">🏠</div>
           <span class="preset-name">Away</span>
           <span class="preset-desc">All off</span>
         </button>
-        <button class="preset-btn" onclick="applyPreset('sleep')">
+        <button class="preset-btn" onclick="applyPreset(&#39;sleep&#39;)">
           <div class="preset-icon">🌙</div>
           <span class="preset-name">Sleep</span>
           <span class="preset-desc">Bedroom · 22°</span>
         </button>
-        <button class="preset-btn" onclick="applyPreset('work')">
+        <button class="preset-btn" onclick="applyPreset(&#39;work&#39;)">
           <div class="preset-icon">💻</div>
           <span class="preset-name">Work day</span>
           <span class="preset-desc">Study · 22°</span>
         </button>
-        <button class="preset-btn" onclick="applyPreset('evening')">
+        <button class="preset-btn" onclick="applyPreset(&#39;evening&#39;)">
           <div class="preset-icon">🛋</div>
           <span class="preset-name">Evening</span>
           <span class="preset-desc">Living · 22°</span>
@@ -969,11 +1051,8 @@
       <div class="card-label">Kitchen humidity</div>
       <div class="humidity-arc">
         <svg viewBox="0 0 80 80">
-          <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(96,160,240,0.1)" stroke-width="6"/>
-          <circle cx="40" cy="40" r="32" fill="none" stroke="#60a0f0" stroke-width="6"
-            stroke-dasharray="201.06" stroke-dashoffset="60.3"
-            stroke-linecap="round"
-            transform="rotate(-90 40 40)"/>
+          <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(96,160,240,0.1)" stroke-width="6"></circle>
+          <circle cx="40" cy="40" r="32" fill="none" stroke="#60a0f0" stroke-width="6" stroke-dasharray="201.06" stroke-dashoffset="60.3" stroke-linecap="round" transform="rotate(-90 40 40)"></circle>
         </svg>
         <div class="humidity-val">—%</div>
       </div>
@@ -1034,6 +1113,28 @@
 
   </div>
 
+</div>
+
+<!-- 7-DAY STAT POPUP -->
+<div class="stat-popup" id="statPopup" onclick="closeStatOnBackdrop(event)">
+  <div class="stat-popup-panel">
+    <div class="stat-popup-header">
+      <div>
+        <div class="stat-popup-title" id="statPopupTitle">—</div>
+        <div class="stat-popup-sub" id="statPopupSub">7-day hourly statistics · min / mean / max</div>
+      </div>
+      <div class="stat-popup-nav">
+        <button class="stat-nav-btn" onclick="navigateStat(-1)" title="Previous">‹</button>
+        <button class="stat-nav-btn" onclick="navigateStat(1)" title="Next">›</button>
+        <button class="stat-close-btn" onclick="closeStat()">✕</button>
+      </div>
+    </div>
+    <div class="stat-popup-dots" id="statDots"></div>
+    <div class="stat-popup-body">
+      <canvas id="statChart"></canvas>
+    </div>
+    <div class="stat-popup-bar" id="statBar"></div>
+  </div>
 </div>
 
 <!-- TOAST -->
@@ -1723,5 +1824,223 @@ async function updateHumidityChart() {
   humidityChart.update('none'); // no animation for live updates
 }
 
+
+// ══════════════════════════════════════════════
+// 7-DAY STAT POPUP
+// ══════════════════════════════════════════════
+
+// Convert epoch ms (UTC) to AEST label — UTC+11 on 29 Mar 2026
+function epochToAEST(ms) {
+  const d = new Date(ms + 11 * 3600 * 1000);
+  const day = d.getUTCDay();
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const h = String(d.getUTCHours()).padStart(2,'0');
+  return `${days[day]} ${h}:00`;
+}
+
+// Thin to every Nth sample for readability
+function thinStats(arr, step) {
+  return arr.filter((_,i) => i % step === 0);
+}
+
+// ── RAW 7-DAY HOURLY STATS from HA (epoch ms UTC, mean/min/max) ──
+const RAW_STATS = {
+  outside: [{"s":1774166400000,"m":25.80,"lo":25.4,"hi":26.2},{"s":1774170000000,"m":24.95,"lo":24.1,"hi":25.4},{"s":1774173600000,"m":23.20,"lo":22.5,"hi":24.1},{"s":1774177200000,"m":22.24,"lo":22.1,"hi":22.5},{"s":1774180800000,"m":21.85,"lo":21.6,"hi":22.1},{"s":1774184400000,"m":21.25,"lo":21.0,"hi":21.6},{"s":1774188000000,"m":20.83,"lo":20.8,"hi":21.0},{"s":1774191600000,"m":20.61,"lo":20.5,"hi":20.8},{"s":1774195200000,"m":20.17,"lo":20.1,"hi":20.5},{"s":1774198800000,"m":19.91,"lo":19.9,"hi":20.1},{"s":1774202400000,"m":19.90,"lo":19.9,"hi":19.9},{"s":1774206000000,"m":19.61,"lo":19.5,"hi":19.9},{"s":1774209600000,"m":19.33,"lo":19.3,"hi":19.5},{"s":1774213200000,"m":19.49,"lo":19.3,"hi":19.9},{"s":1774216800000,"m":20.60,"lo":19.9,"hi":21.1},{"s":1774220400000,"m":21.72,"lo":21.1,"hi":22.2},{"s":1774224000000,"m":22.53,"lo":22.2,"hi":22.6},{"s":1774227600000,"m":23.36,"lo":22.6,"hi":24.0},{"s":1774231200000,"m":24.23,"lo":24.0,"hi":24.4},{"s":1774234800000,"m":24.63,"lo":24.4,"hi":25.0},{"s":1774238400000,"m":25.15,"lo":25.0,"hi":25.4},{"s":1774242000000,"m":25.92,"lo":25.4,"hi":26.1},{"s":1774245600000,"m":25.53,"lo":25.3,"hi":26.1},{"s":1774249200000,"m":25.45,"lo":25.3,"hi":25.5},{"s":1774252800000,"m":25.39,"lo":25.1,"hi":25.5},{"s":1774256400000,"m":24.85,"lo":24.5,"hi":25.1},{"s":1774260000000,"m":24.13,"lo":23.7,"hi":24.5},{"s":1774263600000,"m":23.43,"lo":23.0,"hi":23.7},{"s":1774267200000,"m":22.56,"lo":22.2,"hi":23.0},{"s":1774270800000,"m":21.79,"lo":21.6,"hi":22.2},{"s":1774274400000,"m":21.32,"lo":21.0,"hi":21.6},{"s":1774278000000,"m":20.94,"lo":20.8,"hi":21.0},{"s":1774281600000,"m":20.77,"lo":20.7,"hi":20.8},{"s":1774285200000,"m":20.48,"lo":20.3,"hi":20.7},{"s":1774288800000,"m":20.20,"lo":20.1,"hi":20.3},{"s":1774292400000,"m":20.03,"lo":19.9,"hi":20.1},{"s":1774296000000,"m":19.92,"lo":19.9,"hi":20.0},{"s":1774299600000,"m":20.35,"lo":20.0,"hi":20.8},{"s":1774303200000,"m":21.36,"lo":20.8,"hi":22.0},{"s":1774306800000,"m":22.46,"lo":22.0,"hi":23.0},{"s":1774310400000,"m":23.73,"lo":23.0,"hi":24.8},{"s":1774314000000,"m":25.59,"lo":24.8,"hi":26.4},{"s":1774317600000,"m":26.21,"lo":25.8,"hi":26.4},{"s":1774321200000,"m":25.32,"lo":24.6,"hi":25.8},{"s":1774324800000,"m":24.16,"lo":23.9,"hi":24.6},{"s":1774328400000,"m":23.31,"lo":22.9,"hi":23.9},{"s":1774332000000,"m":22.74,"lo":22.3,"hi":22.9},{"s":1774335600000,"m":21.92,"lo":21.7,"hi":22.3},{"s":1774339200000,"m":21.53,"lo":21.5,"hi":21.7},{"s":1774342800000,"m":21.29,"lo":21.0,"hi":21.5},{"s":1774346400000,"m":20.97,"lo":20.8,"hi":21.0},{"s":1774350000000,"m":20.76,"lo":20.6,"hi":20.8},{"s":1774353600000,"m":20.46,"lo":20.2,"hi":20.6},{"s":1774357200000,"m":20.12,"lo":20.0,"hi":20.2},{"s":1774360800000,"m":19.96,"lo":19.9,"hi":20.0},{"s":1774364400000,"m":19.73,"lo":19.7,"hi":19.9},{"s":1774368000000,"m":19.70,"lo":19.7,"hi":19.7},{"s":1774371600000,"m":19.61,"lo":19.4,"hi":19.7},{"s":1774375200000,"m":19.40,"lo":19.3,"hi":19.4},{"s":1774378800000,"m":19.30,"lo":19.3,"hi":19.3},{"s":1774382400000,"m":19.32,"lo":19.3,"hi":19.5},{"s":1774386000000,"m":19.70,"lo":19.5,"hi":20.1},{"s":1774389600000,"m":20.58,"lo":20.1,"hi":21.1},{"s":1774393200000,"m":22.18,"lo":21.1,"hi":23.5},{"s":1774396800000,"m":24.41,"lo":23.5,"hi":25.4},{"s":1774400400000,"m":25.89,"lo":25.4,"hi":26.0},{"s":1774404000000,"m":26.27,"lo":26.0,"hi":26.6},{"s":1774407600000,"m":25.99,"lo":25.0,"hi":26.8},{"s":1774411200000,"m":24.93,"lo":24.8,"hi":25.1},{"s":1774414800000,"m":25.19,"lo":25.1,"hi":25.4},{"s":1774418400000,"m":24.96,"lo":24.2,"hi":25.4},{"s":1774422000000,"m":23.32,"lo":22.4,"hi":24.2},{"s":1774425600000,"m":21.69,"lo":21.2,"hi":22.4},{"s":1774429200000,"m":20.91,"lo":20.8,"hi":21.2},{"s":1774432800000,"m":20.70,"lo":20.6,"hi":20.8},{"s":1774436400000,"m":20.53,"lo":20.3,"hi":20.6},{"s":1774440000000,"m":20.09,"lo":19.7,"hi":20.3},{"s":1774443600000,"m":19.52,"lo":19.5,"hi":19.7},{"s":1774447200000,"m":19.62,"lo":19.5,"hi":19.7},{"s":1774450800000,"m":19.50,"lo":19.3,"hi":19.6},{"s":1774454400000,"m":18.92,"lo":18.7,"hi":19.3},{"s":1774458000000,"m":18.43,"lo":18.3,"hi":18.7},{"s":1774461600000,"m":18.51,"lo":18.5,"hi":18.6},{"s":1774465200000,"m":18.42,"lo":18.1,"hi":18.5},{"s":1774468800000,"m":18.03,"lo":17.9,"hi":18.1},{"s":1774472400000,"m":18.00,"lo":18.0,"hi":18.0},{"s":1774476000000,"m":18.25,"lo":18.0,"hi":18.6},{"s":1774479600000,"m":19.26,"lo":18.6,"hi":19.7},{"s":1774483200000,"m":19.99,"lo":19.7,"hi":20.1},{"s":1774486800000,"m":19.57,"lo":18.5,"hi":20.1},{"s":1774490400000,"m":17.46,"lo":16.6,"hi":18.5},{"s":1774494000000,"m":16.07,"lo":15.3,"hi":16.6},{"s":1774497600000,"m":15.61,"lo":15.3,"hi":15.7},{"s":1774501200000,"m":15.14,"lo":14.6,"hi":15.6},{"s":1774504800000,"m":14.12,"lo":13.8,"hi":14.6},{"s":1774508400000,"m":13.76,"lo":13.6,"hi":13.8},{"s":1774512000000,"m":13.71,"lo":13.6,"hi":13.9},{"s":1774515600000,"m":13.69,"lo":13.5,"hi":13.9},{"s":1774519200000,"m":13.48,"lo":13.3,"hi":13.9},{"s":1774522800000,"m":14.14,"lo":13.9,"hi":14.4},{"s":1774526400000,"m":14.40,"lo":13.9,"hi":14.6},{"s":1774530000000,"m":13.92,"lo":13.6,"hi":14.1},{"s":1774533600000,"m":13.51,"lo":13.4,"hi":13.8},{"s":1774537200000,"m":13.70,"lo":13.6,"hi":13.9},{"s":1774540800000,"m":13.77,"lo":13.6,"hi":14.0},{"s":1774544400000,"m":14.05,"lo":13.8,"hi":14.4},{"s":1774548000000,"m":14.51,"lo":14.4,"hi":14.6},{"s":1774551600000,"m":14.44,"lo":14.3,"hi":14.5},{"s":1774555200000,"m":14.22,"lo":14.2,"hi":14.3},{"s":1774558800000,"m":14.60,"lo":14.2,"hi":14.9},{"s":1774562400000,"m":15.61,"lo":14.9,"hi":16.3},{"s":1774566000000,"m":16.77,"lo":16.3,"hi":17.1},{"s":1774569600000,"m":16.76,"lo":16.7,"hi":16.9},{"s":1774573200000,"m":17.12,"lo":16.7,"hi":17.3},{"s":1774576800000,"m":17.13,"lo":16.9,"hi":17.3},{"s":1774580400000,"m":16.71,"lo":16.2,"hi":17.1},{"s":1774584000000,"m":16.31,"lo":16.2,"hi":16.6},{"s":1774587600000,"m":16.77,"lo":16.6,"hi":17.0},{"s":1774591200000,"m":16.59,"lo":16.4,"hi":16.8},{"s":1774594800000,"m":16.21,"lo":16.0,"hi":16.4},{"s":1774598400000,"m":15.78,"lo":15.7,"hi":16.0},{"s":1774602000000,"m":15.59,"lo":15.5,"hi":15.7},{"s":1774605600000,"m":15.41,"lo":15.3,"hi":15.5},{"s":1774609200000,"m":15.10,"lo":15.0,"hi":15.3},{"s":1774612800000,"m":15.19,"lo":15.0,"hi":15.3},{"s":1774616400000,"m":15.05,"lo":14.8,"hi":15.2},{"s":1774620000000,"m":14.86,"lo":14.7,"hi":15.0},{"s":1774623600000,"m":14.62,"lo":14.5,"hi":14.7},{"s":1774627200000,"m":14.50,"lo":14.5,"hi":14.5},{"s":1774630800000,"m":14.47,"lo":14.4,"hi":14.6},{"s":1774634400000,"m":14.69,"lo":14.6,"hi":14.8},{"s":1774638000000,"m":14.51,"lo":14.4,"hi":14.6},{"s":1774641600000,"m":14.36,"lo":14.3,"hi":14.4},{"s":1774645200000,"m":14.51,"lo":14.3,"hi":14.9},{"s":1774648800000,"m":15.29,"lo":14.9,"hi":15.7},{"s":1774652400000,"m":16.19,"lo":15.7,"hi":16.7},{"s":1774656000000,"m":17.32,"lo":16.7,"hi":17.7},{"s":1774659600000,"m":18.38,"lo":17.7,"hi":18.7},{"s":1774663200000,"m":18.86,"lo":18.5,"hi":19.1},{"s":1774666800000,"m":19.25,"lo":19.1,"hi":19.3},{"s":1774670400000,"m":19.31,"lo":19.1,"hi":19.5},{"s":1774674000000,"m":19.15,"lo":19.0,"hi":19.2},{"s":1774677600000,"m":18.69,"lo":18.5,"hi":19.0},{"s":1774681200000,"m":18.34,"lo":18.2,"hi":18.5},{"s":1774684800000,"m":17.95,"lo":17.8,"hi":18.2},{"s":1774688400000,"m":17.57,"lo":17.4,"hi":17.8},{"s":1774692000000,"m":17.40,"lo":17.2,"hi":17.4},{"s":1774695600000,"m":17.20,"lo":17.2,"hi":17.2},{"s":1774699200000,"m":17.20,"lo":17.1,"hi":17.2},{"s":1774702800000,"m":16.94,"lo":16.9,"hi":17.1},{"s":1774706400000,"m":16.82,"lo":16.8,"hi":16.9},{"s":1774710000000,"m":16.80,"lo":16.8,"hi":16.8},{"s":1774713600000,"m":16.61,"lo":16.6,"hi":16.8},{"s":1774717200000,"m":16.70,"lo":16.6,"hi":16.7},{"s":1774720800000,"m":16.52,"lo":16.4,"hi":16.7},{"s":1774724400000,"m":16.36,"lo":16.3,"hi":16.4},{"s":1774728000000,"m":16.30,"lo":16.3,"hi":16.3},{"s":1774731600000,"m":16.41,"lo":16.3,"hi":16.7},{"s":1774735200000,"m":17.22,"lo":16.7,"hi":17.9},{"s":1774738800000,"m":17.99,"lo":17.9,"hi":18.1},{"s":1774742400000,"m":18.13,"lo":17.9,"hi":18.6},{"s":1774746000000,"m":19.19,"lo":18.6,"hi":19.6},{"s":1774749600000,"m":19.88,"lo":19.6,"hi":20.0},{"s":1774753200000,"m":19.80,"lo":19.7,"hi":20.0},{"s":1774756800000,"m":19.87,"lo":19.8,"hi":19.9},{"s":1774760400000,"m":19.76,"lo":19.6,"hi":19.9},{"s":1774764000000,"m":19.44,"lo":19.3,"hi":19.6}],
+  lounge: [{"s":1774166400000,"m":23.30,"lo":23.3,"hi":23.3},{"s":1774170000000,"m":23.30,"lo":23.3,"hi":23.3},{"s":1774173600000,"m":23.41,"lo":23.3,"hi":23.6},{"s":1774177200000,"m":23.56,"lo":23.5,"hi":23.6},{"s":1774180800000,"m":23.45,"lo":23.4,"hi":23.5},{"s":1774184400000,"m":23.22,"lo":23.2,"hi":23.4},{"s":1774188000000,"m":23.10,"lo":23.1,"hi":23.2},{"s":1774191600000,"m":23.02,"lo":22.8,"hi":23.1},{"s":1774195200000,"m":22.77,"lo":22.7,"hi":22.8},{"s":1774198800000,"m":22.59,"lo":22.5,"hi":22.7},{"s":1774202400000,"m":22.44,"lo":22.4,"hi":22.5},{"s":1774206000000,"m":22.24,"lo":22.2,"hi":22.4},{"s":1774209600000,"m":22.11,"lo":22.1,"hi":22.2},{"s":1774213200000,"m":21.90,"lo":21.8,"hi":22.1},{"s":1774216800000,"m":21.80,"lo":21.8,"hi":21.8},{"s":1774220400000,"m":21.80,"lo":21.8,"hi":21.8},{"s":1774224000000,"m":21.93,"lo":21.8,"hi":22.1},{"s":1774227600000,"m":22.27,"lo":22.1,"hi":22.5},{"s":1774231200000,"m":22.75,"lo":22.5,"hi":23.1},{"s":1774234800000,"m":23.49,"lo":23.1,"hi":23.7},{"s":1774238400000,"m":23.70,"lo":23.7,"hi":23.7},{"s":1774242000000,"m":23.85,"lo":23.7,"hi":24.1},{"s":1774245600000,"m":24.11,"lo":24.1,"hi":24.2},{"s":1774249200000,"m":24.20,"lo":24.2,"hi":24.2},{"s":1774252800000,"m":24.20,"lo":24.2,"hi":24.2},{"s":1774256400000,"m":24.36,"lo":24.2,"hi":24.4},{"s":1774260000000,"m":24.31,"lo":24.3,"hi":24.4},{"s":1774263600000,"m":24.20,"lo":24.1,"hi":24.3},{"s":1774267200000,"m":24.10,"lo":24.1,"hi":24.1},{"s":1774270800000,"m":23.97,"lo":23.9,"hi":24.1},{"s":1774274400000,"m":23.78,"lo":23.6,"hi":23.9},{"s":1774278000000,"m":23.53,"lo":23.4,"hi":23.6},{"s":1774281600000,"m":23.36,"lo":23.3,"hi":23.4},{"s":1774285200000,"m":23.14,"lo":23.1,"hi":23.3},{"s":1774288800000,"m":22.98,"lo":22.8,"hi":23.1},{"s":1774292400000,"m":22.78,"lo":22.7,"hi":22.8},{"s":1774296000000,"m":22.61,"lo":22.5,"hi":22.7},{"s":1774299600000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774303200000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774306800000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774310400000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774314000000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774317600000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774321200000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774324800000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774328400000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774332000000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774335600000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774339200000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774342800000,"m":22.50,"lo":22.5,"hi":22.5},{"s":1774346400000,"m":23.14,"lo":22.5,"hi":23.5},{"s":1774350000000,"m":23.50,"lo":23.5,"hi":23.5},{"s":1774353600000,"m":23.29,"lo":23.1,"hi":23.5},{"s":1774357200000,"m":23.01,"lo":22.9,"hi":23.1},{"s":1774360800000,"m":22.78,"lo":22.7,"hi":22.9},{"s":1774364400000,"m":22.61,"lo":22.4,"hi":22.7},{"s":1774368000000,"m":22.38,"lo":22.3,"hi":22.4},{"s":1774371600000,"m":22.23,"lo":22.1,"hi":22.3},{"s":1774375200000,"m":22.06,"lo":22.0,"hi":22.1},{"s":1774378800000,"m":21.95,"lo":21.9,"hi":22.0},{"s":1774382400000,"m":21.90,"lo":21.9,"hi":21.9},{"s":1774386000000,"m":21.71,"lo":21.7,"hi":21.9},{"s":1774389600000,"m":21.69,"lo":21.6,"hi":21.7},{"s":1774393200000,"m":21.67,"lo":21.6,"hi":21.8},{"s":1774396800000,"m":22.05,"lo":21.8,"hi":22.4},{"s":1774400400000,"m":22.63,"lo":22.4,"hi":22.8},{"s":1774404000000,"m":23.06,"lo":22.8,"hi":23.2},{"s":1774407600000,"m":23.39,"lo":23.2,"hi":23.4},{"s":1774411200000,"m":23.32,"lo":23.3,"hi":23.4},{"s":1774414800000,"m":23.52,"lo":23.4,"hi":23.6},{"s":1774418400000,"m":23.67,"lo":23.6,"hi":23.7},{"s":1774422000000,"m":23.69,"lo":23.5,"hi":23.7},{"s":1774425600000,"m":23.49,"lo":23.4,"hi":23.5},{"s":1774429200000,"m":23.40,"lo":23.4,"hi":23.4},{"s":1774432800000,"m":23.28,"lo":23.2,"hi":23.4},{"s":1774436400000,"m":23.20,"lo":23.2,"hi":23.2},{"s":1774440000000,"m":23.20,"lo":23.2,"hi":23.2},{"s":1774443600000,"m":23.08,"lo":22.9,"hi":23.2},{"s":1774447200000,"m":22.88,"lo":22.8,"hi":22.9},{"s":1774450800000,"m":22.69,"lo":22.6,"hi":22.8},{"s":1774454400000,"m":22.54,"lo":22.5,"hi":22.6},{"s":1774458000000,"m":22.35,"lo":22.3,"hi":22.5},{"s":1774461600000,"m":22.18,"lo":22.0,"hi":22.3},{"s":1774465200000,"m":21.97,"lo":21.9,"hi":22.0},{"s":1774468800000,"m":21.87,"lo":21.8,"hi":21.9},{"s":1774472400000,"m":21.76,"lo":21.7,"hi":21.8},{"s":1774476000000,"m":21.60,"lo":21.5,"hi":21.7},{"s":1774479600000,"m":21.50,"lo":21.5,"hi":21.5},{"s":1774483200000,"m":21.63,"lo":21.5,"hi":21.7},{"s":1774486800000,"m":21.70,"lo":21.7,"hi":21.7},{"s":1774490400000,"m":21.70,"lo":21.7,"hi":21.7},{"s":1774494000000,"m":21.61,"lo":21.6,"hi":21.7},{"s":1774497600000,"m":21.41,"lo":21.3,"hi":21.6},{"s":1774501200000,"m":21.25,"lo":21.2,"hi":21.3},{"s":1774504800000,"m":21.10,"lo":20.9,"hi":21.2},{"s":1774508400000,"m":20.87,"lo":20.8,"hi":20.9},{"s":1774512000000,"m":20.80,"lo":20.6,"hi":21.8},{"s":1774515600000,"m":21.99,"lo":21.6,"hi":22.6},{"s":1774519200000,"m":21.28,"lo":20.8,"hi":22.0},{"s":1774522800000,"m":20.43,"lo":20.2,"hi":20.8},{"s":1774526400000,"m":19.91,"lo":19.6,"hi":20.2},{"s":1774530000000,"m":19.47,"lo":19.2,"hi":19.6},{"s":1774533600000,"m":19.14,"lo":19.0,"hi":19.2},{"s":1774537200000,"m":18.89,"lo":18.8,"hi":19.0},{"s":1774540800000,"m":18.74,"lo":18.7,"hi":18.8},{"s":1774544400000,"m":18.52,"lo":18.5,"hi":18.7},{"s":1774548000000,"m":18.37,"lo":18.2,"hi":18.5},{"s":1774551600000,"m":18.18,"lo":18.1,"hi":18.2},{"s":1774555200000,"m":17.98,"lo":17.7,"hi":18.1},{"s":1774558800000,"m":19.05,"lo":17.7,"hi":21.3},{"s":1774562400000,"m":22.00,"lo":21.3,"hi":22.5},{"s":1774566000000,"m":21.96,"lo":21.7,"hi":22.3},{"s":1774569600000,"m":21.46,"lo":20.7,"hi":22.1},{"s":1774573200000,"m":20.15,"lo":19.9,"hi":20.7},{"s":1774576800000,"m":19.64,"lo":19.5,"hi":19.9},{"s":1774580400000,"m":19.38,"lo":19.3,"hi":19.5},{"s":1774584000000,"m":19.30,"lo":19.3,"hi":19.3},{"s":1774587600000,"m":19.30,"lo":19.3,"hi":19.3},{"s":1774591200000,"m":19.38,"lo":19.3,"hi":19.4},{"s":1774594800000,"m":19.31,"lo":19.2,"hi":19.4},{"s":1774598400000,"m":19.19,"lo":19.1,"hi":19.2},{"s":1774602000000,"m":19.08,"lo":19.0,"hi":19.1},{"s":1774605600000,"m":18.92,"lo":18.8,"hi":19.0},{"s":1774609200000,"m":18.80,"lo":18.8,"hi":18.8},{"s":1774612800000,"m":18.80,"lo":18.8,"hi":18.8},{"s":1774616400000,"m":18.83,"lo":18.7,"hi":18.9},{"s":1774620000000,"m":18.63,"lo":18.5,"hi":18.7},{"s":1774623600000,"m":18.46,"lo":18.4,"hi":18.5},{"s":1774627200000,"m":18.40,"lo":18.4,"hi":18.4},{"s":1774630800000,"m":18.24,"lo":18.2,"hi":18.4},{"s":1774634400000,"m":18.20,"lo":18.2,"hi":18.2},{"s":1774638000000,"m":18.36,"lo":18.2,"hi":18.4},{"s":1774641600000,"m":18.20,"lo":18.2,"hi":18.2},{"s":1774645200000,"m":19.60,"lo":18.2,"hi":21.4},{"s":1774648800000,"m":21.94,"lo":21.4,"hi":22.4},{"s":1774652400000,"m":22.02,"lo":21.6,"hi":22.4},{"s":1774656000000,"m":21.33,"lo":20.6,"hi":22.2},{"s":1774659600000,"m":20.15,"lo":20.0,"hi":20.6},{"s":1774663200000,"m":19.94,"lo":19.9,"hi":20.0},{"s":1774666800000,"m":20.11,"lo":19.9,"hi":20.5},{"s":1774670400000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774674000000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774677600000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774681200000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774684800000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774688400000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774692000000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774695600000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774699200000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774702800000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774706400000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774710000000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774713600000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774717200000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774720800000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774724400000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774728000000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774731600000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774735200000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774738800000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774742400000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774746000000,"m":20.50,"lo":20.5,"hi":20.5},{"s":1774749600000,"m":20.21,"lo":20.1,"hi":20.5},{"s":1774753200000,"m":20.30,"lo":20.3,"hi":20.3},{"s":1774756800000,"m":20.30,"lo":20.3,"hi":20.3},{"s":1774760400000,"m":20.30,"lo":20.3,"hi":20.3},{"s":1774764000000,"m":20.30,"lo":20.3,"hi":20.3}],
+  study: [{"s":1774166400000,"m":23.50,"lo":23.5,"hi":23.5},{"s":1774209600000,"m":22.86,"lo":22.8,"hi":22.9},{"s":1774252800000,"m":24.90,"lo":24.9,"hi":24.9},{"s":1774296000000,"m":23.71,"lo":23.6,"hi":23.8},{"s":1774339200000,"m":24.35,"lo":24.3,"hi":24.4},{"s":1774382400000,"m":23.09,"lo":22.9,"hi":23.1},{"s":1774425600000,"m":24.49,"lo":24.4,"hi":24.5},{"s":1774468800000,"m":23.17,"lo":23.1,"hi":23.2},{"s":1774512000000,"m":21.84,"lo":21.8,"hi":22.0},{"s":1774555200000,"m":19.72,"lo":19.5,"hi":19.9},{"s":1774598400000,"m":20.62,"lo":20.4,"hi":20.7},{"s":1774641600000,"m":19.40,"lo":19.4,"hi":19.5},{"s":1774684800000,"m":21.16,"lo":21.1,"hi":21.2},{"s":1774727600000,"m":20.35,"lo":20.3,"hi":20.4},{"s":1774760400000,"m":21.30,"lo":21.3,"hi":21.3},{"s":1774764000000,"m":21.30,"lo":21.3,"hi":21.3}],
+  kitchen: [{"s":1774166400000,"m":21.81,"lo":21.7,"hi":22.0},{"s":1774209600000,"m":20.23,"lo":20.2,"hi":20.3},{"s":1774252800000,"m":23.23,"lo":23.1,"hi":23.5},{"s":1774296000000,"m":21.09,"lo":21.0,"hi":21.2},{"s":1774339200000,"m":22.08,"lo":22.0,"hi":22.2},{"s":1774382400000,"m":20.30,"lo":20.3,"hi":20.3},{"s":1774425600000,"m":22.31,"lo":22.3,"hi":22.4},{"s":1774468800000,"m":20.64,"lo":20.5,"hi":21.9},{"s":1774512000000,"m":19.96,"lo":19.8,"hi":20.4},{"s":1774555200000,"m":17.63,"lo":17.2,"hi":17.8},{"s":1774598400000,"m":19.09,"lo":18.9,"hi":19.2},{"s":1774641600000,"m":17.55,"lo":17.5,"hi":17.6},{"s":1774684800000,"m":19.95,"lo":19.8,"hi":20.1},{"s":1774727600000,"m":18.40,"lo":18.4,"hi":18.4},{"s":1774756800000,"m":21.07,"lo":20.9,"hi":21.1},{"s":1774764000000,"m":20.75,"lo":20.6,"hi":20.8}],
+  roof: [{"s":1774166400000,"m":28.38,"lo":27.3,"hi":29.5},{"s":1774195200000,"m":20.32,"lo":20.1,"hi":20.5},{"s":1774224000000,"m":30.71,"lo":28.6,"hi":31.8},{"s":1774252800000,"m":28.30,"lo":27.4,"hi":29.4},{"s":1774281600000,"m":20.67,"lo":20.6,"hi":20.8},{"s":1774310400000,"m":26.95,"lo":24.9,"hi":29.3},{"s":1774339200000,"m":24.35,"lo":23.5,"hi":24.7},{"s":1774368000000,"m":19.69,"lo":19.6,"hi":19.7},{"s":1774396800000,"m":31.96,"lo":30.0,"hi":34.8},{"s":1774425600000,"m":25.80,"lo":25.8,"hi":25.8},{"s":1774454400000,"m":25.80,"lo":25.8,"hi":25.8},{"s":1774483200000,"m":30.12,"lo":27.6,"hi":31.6},{"s":1774512000000,"m":26.00,"lo":26.0,"hi":26.0},{"s":1774540800000,"m":15.68,"lo":15.6,"hi":15.7},{"s":1774569600000,"m":21.72,"lo":16.2,"hi":25.0},{"s":1774598400000,"m":19.13,"lo":18.8,"hi":19.6},{"s":1774627200000,"m":16.62,"lo":16.6,"hi":16.7},{"s":1774656000000,"m":23.21,"lo":21.7,"hi":26.6},{"s":1774684800000,"m":26.30,"lo":26.3,"hi":26.3},{"s":1774713600000,"m":26.30,"lo":26.3,"hi":26.3},{"s":1774742400000,"m":26.30,"lo":26.3,"hi":26.3},{"s":1774764000000,"m":26.30,"lo":26.3,"hi":26.3}],
+  humidity: [{"s":1774166400000,"m":64.95,"lo":63.3,"hi":67.3},{"s":1774195200000,"m":72.30,"lo":72.2,"hi":72.7},{"s":1774224000000,"m":69.61,"lo":69.0,"hi":69.8},{"s":1774252800000,"m":67.17,"lo":65.8,"hi":68.1},{"s":1774281600000,"m":70.97,"lo":70.5,"hi":71.1},{"s":1774310400000,"m":71.09,"lo":70.5,"hi":71.7},{"s":1774339200000,"m":71.00,"lo":70.5,"hi":71.3},{"s":1774368000000,"m":73.85,"lo":73.7,"hi":74.4},{"s":1774396800000,"m":68.65,"lo":66.8,"hi":69.5},{"s":1774418400000,"m":65.31,"lo":63.3,"hi":68.7},{"s":1774447200000,"m":68.58,"lo":68.2,"hi":68.7},{"s":1774476000000,"m":66.21,"lo":65.8,"hi":66.8},{"s":1774504800000,"m":63.02,"lo":62.6,"hi":64.1},{"s":1774533600000,"m":64.79,"lo":64.6,"hi":65.0},{"s":1774562400000,"m":53.75,"lo":51.7,"hi":58.1},{"s":1774591200000,"m":54.89,"lo":54.7,"hi":55.2},{"s":1774620000000,"m":61.46,"lo":61.1,"hi":61.8},{"s":1774648800000,"m":65.05,"lo":64.3,"hi":66.1},{"s":1774677600000,"m":59.61,"lo":59.2,"hi":59.9},{"s":1774706400000,"m":66.10,"lo":65.9,"hi":66.5},{"s":1774735200000,"m":69.86,"lo":68.4,"hi":70.0},{"s":1774756800000,"m":59.03,"lo":58.4,"hi":59.7},{"s":1774764000000,"m":60.27,"lo":60.0,"hi":61.1}],
+};
+
+const STAT_CONFIG = {
+  outside:  { label:'Outside',          color:'#f0a020', unit:'°C', yMin:12, yMax:28 },
+  lounge:   { label:'Lounge',           color:'#2dd4bf', unit:'°C', yMin:17, yMax:26 },
+  study:    { label:'Study',            color:'#60a0f0', unit:'°C', yMin:17, yMax:26 },
+  kitchen:  { label:'Kitchen',          color:'#4ade80', unit:'°C', yMin:17, yMax:25 },
+  roof:     { label:'Roof cavity',      color:'#f06050', unit:'°C', yMin:12, yMax:42 },
+  humidity: { label:'Kitchen Humidity', color:'#60a0f0', unit:'%',  yMin:40, yMax:80 },
+};
+const STAT_ORDER = ['outside','lounge','study','kitchen','roof','humidity'];
+
+let currentStatSensor = null;
+let statChartInstance  = null;
+
+function buildStatDots(active) {
+  document.getElementById('statDots').innerHTML = STAT_ORDER.map(k => {
+    const cfg = STAT_CONFIG[k];
+    const isActive = k === active;
+    return `<div class="stat-dot${isActive ? ' active' : ''}"
+      style="${isActive ? `background:${cfg.color}` : ''}"
+      onclick="openStatPopup('${k}')" title="${cfg.label}"></div>`;
+  }).join('');
+}
+
+function buildStatBar(data, cfg) {
+  const means = data.map(d => d.m);
+  const lows  = data.map(d => d.lo);
+  const highs = data.map(d => d.hi);
+  const mn   = Math.min(...lows).toFixed(1);
+  const mx   = Math.max(...highs).toFixed(1);
+  const avg  = (means.reduce((a,b)=>a+b,0)/means.length).toFixed(1);
+  // live "now" value from the card
+  const liveMap = { outside:'.val-outside', lounge:'.val-lounge', study:'.val-study', kitchen:'.val-kitchen', roof:'.val-roof', humidity:'.humidity-val' };
+  const liveEl  = document.querySelector(liveMap[currentStatSensor]);
+  const now = liveEl ? liveEl.textContent.replace(/[^\d.]/g,'') || '—' : '—';
+  document.getElementById('statBar').innerHTML = `
+    <div class="stat-cell"><div class="stat-cell-label">7-day low</div><div class="stat-cell-val" style="color:${cfg.color}">${mn}${cfg.unit}</div></div>
+    <div class="stat-cell"><div class="stat-cell-label">7-day avg</div><div class="stat-cell-val" style="color:${cfg.color}">${avg}${cfg.unit}</div></div>
+    <div class="stat-cell"><div class="stat-cell-label">7-day high</div><div class="stat-cell-val" style="color:${cfg.color}">${mx}${cfg.unit}</div></div>
+    <div class="stat-cell"><div class="stat-cell-label">Now</div><div class="stat-cell-val" style="color:${cfg.color}">${now ? now + cfg.unit : '—'}</div></div>`;
+}
+
+function openStatPopup(sensorKey) {
+  currentStatSensor = sensorKey;
+  const cfg  = STAT_CONFIG[sensorKey];
+  const raw  = RAW_STATS[sensorKey];
+
+  document.getElementById('statPopupTitle').textContent = cfg.label;
+  document.getElementById('statPopupSub').textContent   = '7-day hourly stats · min / mean / max band';
+
+  buildStatDots(sensorKey);
+  buildStatBar(raw, cfg);
+
+  if (statChartInstance) { statChartInstance.destroy(); statChartInstance = null; }
+
+  const labels = raw.map(d => epochToAEST(d.s));
+  const means  = raw.map(d => d.m);
+  const lows   = raw.map(d => d.lo);
+  const highs  = raw.map(d => d.hi);
+
+  const canvas = document.getElementById('statChart');
+  const ctx    = canvas.getContext('2d');
+
+  // Build a gradient fill for the band
+  const grad = ctx.createLinearGradient(0, 0, 0, 300);
+  grad.addColorStop(0, cfg.color + '30');
+  grad.addColorStop(1, cfg.color + '05');
+
+  statChartInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        // Min/max band — use fill 'between' via two datasets
+        {
+          label: 'Max',
+          data: highs,
+          borderColor: 'transparent',
+          backgroundColor: grad,
+          fill: '+1',
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 0,
+          order: 2,
+        },
+        {
+          label: 'Min',
+          data: lows,
+          borderColor: 'transparent',
+          backgroundColor: 'transparent',
+          fill: false,
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 0,
+          order: 3,
+        },
+        // Mean line on top
+        {
+          label: cfg.label,
+          data: means,
+          borderColor: cfg.color,
+          backgroundColor: 'transparent',
+          fill: false,
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: raw.length < 20 ? 4 : 0,
+          pointHoverRadius: 5,
+          pointBackgroundColor: cfg.color,
+          order: 1,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 220 },
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1e2a',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleFont: { family:"'DM Mono', monospace", size:11 },
+          bodyFont:  { family:"'DM Mono', monospace", size:11 },
+          titleColor: 'rgba(255,255,255,0.45)',
+          bodyColor:  '#e8eaf0',
+          filter: item => item.dataset.label !== 'Max' && item.dataset.label !== 'Min',
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.label === 'Max' || ctx.dataset.label === 'Min') return null;
+              const i = ctx.dataIndex;
+              return ` Mean ${ctx.parsed.y.toFixed(1)}${cfg.unit}  (${lows[i]}–${highs[i]}${cfg.unit})`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid:  { color:'rgba(255,255,255,0.04)' },
+          ticks: { color:'rgba(255,255,255,0.3)', font:{ family:"'DM Mono', monospace", size:10 }, maxTicksLimit:10, maxRotation:0 }
+        },
+        y: {
+          min: cfg.yMin, max: cfg.yMax,
+          grid:  { color:'rgba(255,255,255,0.05)' },
+          ticks: { color:'rgba(255,255,255,0.3)', font:{ family:"'DM Mono', monospace", size:10 }, callback: v => v + cfg.unit }
+        }
+      }
+    }
+  });
+
+  document.getElementById('statPopup').classList.add('open');
+  document.addEventListener('keydown', onStatKeydown);
+}
+
+function closeStat() {
+  document.getElementById('statPopup').classList.remove('open');
+  document.removeEventListener('keydown', onStatKeydown);
+}
+
+function closeStatOnBackdrop(e) {
+  if (e.target === document.getElementById('statPopup')) closeStat();
+}
+
+function navigateStat(dir) {
+  const idx  = STAT_ORDER.indexOf(currentStatSensor);
+  const next = STAT_ORDER[(idx + dir + STAT_ORDER.length) % STAT_ORDER.length];
+  openStatPopup(next);
+}
+
+function onStatKeydown(e) {
+  if (e.key === 'Escape')     closeStat();
+  if (e.key === 'ArrowRight') navigateStat(1);
+  if (e.key === 'ArrowLeft')  navigateStat(-1);
+}
+
+// Touch swipe on the panel
+(function() {
+  let sx = null;
+  const panel = document.querySelector('.stat-popup-panel');
+  panel.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive:true });
+  panel.addEventListener('touchend',   e => {
+    if (sx === null) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    if (Math.abs(dx) > 60) navigateStat(dx < 0 ? 1 : -1);
+    sx = null;
+  });
+})();
+
 </body>
 </html>
+</script></body></html>
