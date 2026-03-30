@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
 <style>
   :root {
     --bg: #0d0f14;
@@ -127,6 +128,21 @@
   .chart-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
   .chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; gap: 10px; flex-wrap: wrap; }
   .chart-title { font-size: 13px; font-weight: 600; }
+
+  .chart-wrapper {
+    position: relative;
+    width: 100%;
+    /* 2.5:1 aspect ratio, can be adjusted */
+    padding-top: 40%;
+  }
+
+  .chart-wrapper canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
   .legend { display: flex; gap: 10px; flex-wrap: wrap; }
   .legend-item { display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
   .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -314,7 +330,7 @@
           <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>Living (iZ)</div>
         </div>
       </div>
-      <div style="height: 200px;"><canvas id="tempChart"></canvas></div>
+      <div class="chart-wrapper"><canvas id="tempChart"></canvas></div>
     </div>
 
     <!-- IZONE PANEL -->
@@ -456,7 +472,7 @@
       Comfortable range: <span style="color:var(--green)">40–60%</span>
       &nbsp;·&nbsp; Live values update every 30s
     </div>
-    <div style="height: 160px;"><canvas id="humidityChart"></canvas></div>
+    <div class="chart-wrapper" style="padding-top: 30%;"><canvas id="humidityChart"></canvas></div>
   </div>
 
   <!-- BOTTOM ROW -->
@@ -955,36 +971,91 @@ async function applyPreset(preset) {
 // ══════════════════════════════════════════════
 let tempChart, humidityChart;
 
+function createClimateAnnotations(history) {
+    const annotations = {};
+    if (!history || history.length === 0) return annotations;
+
+    const createAnnotation = (block) => {
+        const isHeating = block.state === 'heating';
+        return {
+            type: 'box',
+            xMin: block.xMin,
+            xMax: block.xMax,
+            yMin: isHeating ? block.targetTemp - 0.1 : 0, // or a scale minimum
+            yMax: isHeating ? 100 : block.targetTemp + 0.1, // or a scale maximum
+            backgroundColor: isHeating ? 'rgba(240, 96, 80, 0.1)' : 'rgba(96, 160, 240, 0.1)',
+            borderColor: isHeating ? 'rgba(240, 96, 80, 0.2)' : 'rgba(96, 160, 240, 0.2)',
+            borderWidth: 1,
+            label: {
+                content: `Target: ${block.targetTemp}°`,
+                display: true,
+                position: 'start',
+                font: { size: 9, family: "'DM Mono', monospace" },
+                color: isHeating ? 'rgba(240, 96, 80, 0.8)' : 'rgba(96, 160, 240, 0.8)',
+            }
+        };
+    };
+
+    let currentBlock = null;
+    for (let i = 0; i < history.length; i++) {
+        const entry = history[i];
+        const hvacAction = entry.attributes.hvac_action; // 'heating', 'cooling', 'idle'
+        const setpoint = entry.attributes.temperature;
+        const entryTime = new Date(entry.last_updated).getTime();
+
+        if ((hvacAction === 'heating' || hvacAction === 'cooling') && !currentBlock) {
+            currentBlock = { state: hvacAction, xMin: entryTime, targetTemp: setpoint };
+        } else if (currentBlock && (hvacAction !== currentBlock.state || setpoint !== currentBlock.targetTemp)) {
+            currentBlock.xMax = entryTime;
+            annotations[currentBlock.xMin] = createAnnotation(currentBlock);
+            currentBlock = (hvacAction === 'heating' || hvacAction === 'cooling') ? { state: hvacAction, xMin: entryTime, targetTemp: setpoint } : null;
+        }
+    }
+    if (currentBlock) {
+        currentBlock.xMax = new Date().getTime();
+        annotations[currentBlock.xMin] = createAnnotation(currentBlock);
+    }
+    return annotations;
+}
+
 function processHistory(data, entityId) {
     const entityHistory = Array.isArray(data) ? data.find(h => h.length > 0 && h[0].entity_id === entityId) : [];
     if (!entityHistory) return [];
-
     const isClimate = entityId.startsWith('climate.');
-
-    return entityHistory.map(d => {
-        let value = isClimate ? d.attributes.current_temperature : d.state;
-        return {
-            x: new Date(d.last_updated).getTime(),
-            y: parseFloat(value)
-        };
-    }).filter(d => !isNaN(d.y));
+    return entityHistory.map(d => ({
+        x: new Date(d.last_updated).getTime(),
+        y: parseFloat(isClimate ? d.attributes.current_temperature : d.state)
+    })).filter(d => !isNaN(d.y));
 }
 
-
 async function initCharts() {
+    if (window.ChartAnnotation) {
+      Chart.register(window.ChartAnnotation);
+    }
+
     const commonOptions = {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor:'#1a1e2a', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+            titleFont:{ family:"'DM Mono', monospace", size:11 },
+            bodyFont: { family:"'DM Mono', monospace", size:11 },
+            titleColor:'rgba(255,255,255,0.5)', bodyColor:'#e8eaf0',
+          }
+        },
         scales: {
-            x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(255,255,255,0.3)', font: { family: "'DM Mono', monospace", size: 10 }, maxTicksLimit: 8 } },
+            x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(255,255,255,0.3)', font: { family: "'DM Mono', monospace", size: 10 }, maxTicksLimit: 10, autoSkipPadding: 20 } },
             y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(255,255,255,0.3)', font: { family: "'DM Mono', monospace", size: 10 } } }
         }
     };
 
     // --- Temperature Chart ---
-    const tempEntities = [ENTITIES.outside, ENTITIES.lounge, ENTITIES.studyTemp, ENTITIES.roofTemp, ENTITIES.living];
+    const tempEntities = [ENTITIES.outside, ENTITIES.lounge, ENTITIES.studyTemp, ENTITIES.roofTemp, ENTITIES.living, ENTITIES.controller];
     const tempHistory = await haGetHistory(tempEntities);
+    const controllerHistory = tempHistory.find(h => h.length > 0 && h[0].entity_id === ENTITIES.controller);
+    const climateAnnotations = createClimateAnnotations(controllerHistory);
 
     tempChart = new Chart(document.getElementById('tempChart'), {
         type: 'line',
@@ -997,7 +1068,17 @@ async function initCharts() {
                 { label: 'Living iZ', data: processHistory(tempHistory, ENTITIES.living), borderColor: '#a78bfa', tension: 0.4, borderWidth: 1.5, pointRadius: 0, borderDash: [4, 3] }
             ]
         },
-        options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, ticks: { ...commonOptions.scales.y.ticks, callback: v => v + '°' } } } }
+        options: {
+            ...commonOptions,
+            plugins: {
+                ...commonOptions.plugins,
+                annotation: {
+                    annotations: climateAnnotations,
+                },
+                tooltip: { ...commonOptions.plugins.tooltip, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}°C` } }
+            },
+            scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, ticks: { ...commonOptions.scales.y.ticks, callback: v => v + '°' } } }
+        }
     });
 
     // --- Humidity Chart ---
@@ -1015,7 +1096,11 @@ async function initCharts() {
                 { label: 'Outside', data: processHistory(humHistory, ENTITIES.outsideHum), borderColor: '#f0a020', tension: 0.4, borderWidth: 1.5, pointRadius: 0 },
             ]
         },
-        options: { ...commonOptions, scales: { ...commonOptions.scales, y: { min: 30, max: 100, ...commonOptions.scales.y, ticks: { ...commonOptions.scales.y.ticks, callback: v => v + '%' } } } }
+        options: {
+            ...commonOptions,
+            plugins: { ...commonOptions.plugins, tooltip: { ...commonOptions.plugins.tooltip, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%` } } },
+            scales: { ...commonOptions.scales, y: { min: 30, max: 100, ...commonOptions.scales.y, ticks: { ...commonOptions.scales.y.ticks, callback: v => v + '%' } } }
+        }
     });
 }
 
