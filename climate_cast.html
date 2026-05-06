@@ -1023,14 +1023,18 @@ let _HA_TOKEN = '';
 function getToken() { return _HA_TOKEN; }
 
 async function resolveToken() {
-  // 1. Try fetching a token file from the same folder as this page
-  try {
-    const r = await fetch('./token', { cache: 'no-store' });
-    if (r.ok) {
-      const t = (await r.text()).trim();
-      if (t) { _HA_TOKEN = t; return; }
-    }
-  } catch { /* not present — fall through */ }
+  // 1. Try fetching a token file from the same folder — only when NOT served
+  //    from the HA server itself (avoids a 404 to /local/token on HA-hosted pages)
+  const isHAOrigin = /homeassistant|hassio|local|8123|slink42/.test(window.location.origin);
+  if (!isHAOrigin) {
+    try {
+      const r = await fetch('./token', { cache: 'no-store' });
+      if (r.ok) {
+        const t = (await r.text()).trim();
+        if (t) { _HA_TOKEN = t; return; }
+      }
+    } catch { /* not present — fall through */ }
+  }
 
   // 2. Try localStorage (saved from a previous manual entry)
   const stored = localStorage.getItem('ha_climate_token');
