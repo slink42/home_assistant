@@ -1016,34 +1016,56 @@
 // ── HA CONFIG ──
 const HA_URL = 'https://ha.slink42.com';
 
-// HA_TOKEN: prefer localStorage override, fall back to value from climate_cast_config.js
-// (HA_TOKEN may be declared by climate_cast_config.js as a var — safe to reassign)
-const _HA_TOKEN_STORED = localStorage.getItem('ha_climate_token') || '';
-const _HA_TOKEN_CONFIG = (typeof HA_TOKEN !== 'undefined' && HA_TOKEN !== 'YOUR_HA_TOKEN') ? HA_TOKEN : '';
-// Use a let so we can update after the prompt
-let _HA_TOKEN = _HA_TOKEN_STORED || _HA_TOKEN_CONFIG;
+// ── TOKEN RESOLUTION ──
+// Priority: 1) ./token file  2) localStorage  3) climate_cast_config.js  4) manual overlay
+let _HA_TOKEN = '';
 
-// Token prompt overlay — shown when no token is available
-if (!_HA_TOKEN) {
-  const _overlay = document.createElement('div');
-  _overlay.className = 'token-overlay';
-  _overlay.innerHTML = `
+function getToken() { return _HA_TOKEN; }
+
+async function resolveToken() {
+  // 1. Try fetching a token file from the same folder as this page
+  try {
+    const r = await fetch('./token', { cache: 'no-store' });
+    if (r.ok) {
+      const t = (await r.text()).trim();
+      if (t) { _HA_TOKEN = t; return; }
+    }
+  } catch { /* not present — fall through */ }
+
+  // 2. Try localStorage (saved from a previous manual entry)
+  const stored = localStorage.getItem('ha_climate_token');
+  if (stored) { _HA_TOKEN = stored; return; }
+
+  // 3. Try climate_cast_config.js (HA_TOKEN global, if loaded)
+  if (typeof HA_TOKEN !== 'undefined' && HA_TOKEN !== 'YOUR_HA_TOKEN' && HA_TOKEN !== '') {
+    _HA_TOKEN = HA_TOKEN; return;
+  }
+
+  // 4. Show manual entry overlay
+  const o = document.createElement('div');
+  o.className = 'token-overlay';
+  o.innerHTML = `
     <div style="color:var(--amber);font-size:16px;font-weight:600;font-family:var(--font)">Home Assistant token required</div>
     <div style="color:var(--muted);font-size:11px;max-width:340px;text-align:center;line-height:1.6;font-family:var(--mono)">
-      Profile → Security → Long-Lived Access Tokens → Create Token
+      Profile → Security → Long-Lived Access Tokens → Create Token<br><br>
+      Or place a <code style="color:var(--amber)">token</code> file in the same folder as this page.
     </div>
     <input id="_tokenInput" type="password" placeholder="Paste token here…"/>
-    <button onclick="
-      var v=document.getElementById('_tokenInput').value.trim();
-      if(!v)return;
-      localStorage.setItem('ha_climate_token',v);
-      location.reload();
-    ">Connect</button>`;
-  document.body.appendChild(_overlay);
+    <button onclick="window._saveToken()">Connect</button>`;
+  document.body.appendChild(o);
+  window._tokenOverlay = o;
+  await new Promise(resolve => { window._tokenResolve = resolve; });
 }
 
-// Expose a safe getter so all functions use the live value
-function getToken() { return localStorage.getItem('ha_climate_token') || _HA_TOKEN_CONFIG || ''; }
+window._saveToken = function() {
+  const v = document.getElementById('_tokenInput').value.trim();
+  if (!v) return;
+  localStorage.setItem('ha_climate_token', v);
+  _HA_TOKEN = v;
+  window._tokenOverlay.remove();
+  window._tokenResolve();
+};
+
 
 const ENTITIES = {
   controller: 'climate.izone_controller_000099968',
@@ -1238,7 +1260,8 @@ function applyControllerUI(state) {
   }
 
   document.getElementById('fanLabel').textContent = fan;
-  if (supply != null) document.getElementById('supplyTemp').textContent = parseFloat(supply).toFixed(1) + '°';
+    if (supply != null) document.getElementById('supplyTemp').textContent = parseFloat(supply).toFixed(1) + '°';
+  else document.getElementById('supplyTemp').textContent = 'N/A'; // Display N/A if supply is null
 }
 
 let sensorHistory = {};
@@ -1671,6 +1694,7 @@ function onPopupKeydown(e) {
 
 // ── MAIN ──
 (async function() {
+  await resolveToken();
   await loadState();
   setInterval(loadState, 15000);
 })();
