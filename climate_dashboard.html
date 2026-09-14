@@ -1047,12 +1047,12 @@
   <div class="chart-card">
     <div class="chart-header">
       <div class="chart-title">Indoor &amp; outdoor humidity</div>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#60a0f0"></div>Kitchen</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>Bathroom (therm.)</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#f06050"></div>Bathroom (presence)</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#2dd4bf"></div>Lounge</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#f0a020"></div>Outside</div>
+      <div class="legend" id="humidityChartLegend">
+        <div class="legend-item" data-idx="0" onclick="toggleHumiditySeries(0)"><div class="legend-dot" style="background:#60a0f0"></div>Kitchen</div>
+        <div class="legend-item" data-idx="1" onclick="toggleHumiditySeries(1)"><div class="legend-dot" style="background:#a78bfa"></div>Bathroom (therm.)</div>
+        <div class="legend-item" data-idx="2" onclick="toggleHumiditySeries(2)"><div class="legend-dot" style="background:#f06050"></div>Bathroom (presence)</div>
+        <div class="legend-item" data-idx="3" onclick="toggleHumiditySeries(3)"><div class="legend-dot" style="background:#2dd4bf"></div>Lounge</div>
+        <div class="legend-item" data-idx="4" onclick="toggleHumiditySeries(4)"><div class="legend-dot" style="background:#f0a020"></div>Outside</div>
       </div>
     </div>
     <!-- comfort band annotation -->
@@ -2027,6 +2027,15 @@ function toggleTempSeries(idx) {
   }
   tempChart.update();
   const item = document.querySelector('#tempChartLegend [data-idx="' + idx + '"]');
+  if (item) item.classList.toggle('hidden', meta.hidden);
+}
+
+function toggleHumiditySeries(idx) {
+  if (!humidityChart) return;
+  const meta = humidityChart.getDatasetMeta(idx);
+  meta.hidden = !meta.hidden;
+  humidityChart.update();
+  const item = document.querySelector('#humidityChartLegend [data-idx="' + idx + '"]');
   if (item) item.classList.toggle('hidden', meta.hidden);
 }
 
