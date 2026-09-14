@@ -1192,7 +1192,7 @@ const ENTITIES = {
   bedroom:    'climate.izone_bedroom',
   dining:     'climate.izone_dining',
   outside:    'sensor.thermometer_outside_temperature',
-  lounge:     'sensor.thermometer_and_presence_lounge_temperature',
+  lounge:     'sensor.living_room_izone_temperature',
   studyTemp:  'sensor.thermometer_study_temperature',
   kitchenTemp:'sensor.alpstuga_air_quality_monitor_temperature',
   kitchenHum: 'sensor.alpstuga_air_quality_monitor_humidity',
@@ -1385,7 +1385,7 @@ function applySensorState(entityId, state) {
   if (isNaN(val)) return;
   const elMap = {
     'sensor.thermometer_outside_temperature':              '.val-outside',
-    'sensor.thermometer_and_presence_lounge_temperature': '.val-lounge',
+    'sensor.living_room_izone_temperature': '.val-lounge',
     'sensor.thermometer_study_temperature':               '.val-study',
     'sensor.alpstuga_air_quality_monitor_temperature':  '.val-kitchen',
     'sensor.thermometer_roof_temperature':                '.val-roof',
@@ -2094,7 +2094,7 @@ let statDataCache = {};
 
 const STAT_CONFIG = {
   outside:  { label:'Outside',          color:'#f0a020', unit:'°C', yMin:12, yMax:28, entity:'sensor.thermometer_outside_temperature' },
-  lounge:   { label:'Lounge',           color:'#2dd4bf', unit:'°C', yMin:17, yMax:26, entity:'sensor.thermometer_and_presence_lounge_temperature' },
+  lounge:   { label:'Lounge',           color:'#2dd4bf', unit:'°C', yMin:17, yMax:26, entity:'sensor.living_room_izone_temperature' },
   study:    { label:'Study',            color:'#60a0f0', unit:'°C', yMin:17, yMax:26, entity:'sensor.thermometer_study_temperature' },
   kitchen:  { label:'Kitchen',          color:'#4ade80', unit:'°C', yMin:17, yMax:25, entity:'sensor.alpstuga_air_quality_monitor_temperature' },
   roof:     { label:'Roof cavity',      color:'#f06050', unit:'°C', yMin:12, yMax:42, entity:'sensor.thermometer_roof_temperature' },
