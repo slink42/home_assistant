@@ -296,6 +296,24 @@
     flex-shrink: 0;
   }
 
+  .range-buttons { display: flex; gap: 6px; margin: 10px 0 14px; }
+  .range-btn {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .range-btn:hover  { border-color: var(--border-hi); color: var(--text); }
+  .range-btn.active { border-color: var(--amber); background: var(--amber-dim); color: var(--amber); }
+
   /* ── IZONE PANEL ── */
   .izone-card {
     background: var(--bg2);
@@ -874,7 +892,7 @@
     <!-- CHART -->
     <div class="chart-card">
       <div class="chart-header">
-        <div class="chart-title">Temperature history — last 24h</div>
+        <div class="chart-title" id="tempChartTitle">Temperature history — last 24h</div>
         <div class="legend" id="tempChartLegend">
           <div class="legend-item" data-idx="0" onclick="toggleTempSeries(0)"><div class="legend-dot" style="background:#f0a020"></div>Outside</div>
           <div class="legend-item" data-idx="1" onclick="toggleTempSeries(1)"><div class="legend-dot" style="background:#2dd4bf"></div>Lounge</div>
@@ -884,6 +902,11 @@
           <div class="legend-item" data-idx="5" onclick="toggleTempSeries(5)"><div class="legend-dot" style="background:#a78bfa"></div>Living (iZ)</div>
           <div class="legend-item" data-idx="6" onclick="toggleTempSeries(6)"><div class="legend-dot" style="background:#fb923c"></div>Bedroom</div>
         </div>
+      </div>
+      <div class="range-buttons" id="tempRangeButtons">
+        <button class="range-btn active" data-range="24h" onclick="setTempRange('24h')">24H</button>
+        <button class="range-btn" data-range="7d" onclick="setTempRange('7d')">7D</button>
+        <button class="range-btn" data-range="30d" onclick="setTempRange('30d')">30D</button>
       </div>
       <canvas id="tempChart" height="200"></canvas>
     </div>
@@ -1725,48 +1748,103 @@ function buildZoneAnnotations(zoneHistMap) {
 }
 
 let tempChart = null;
+let currentTempRange = '24h';
 
-async function initTempChart() {
+const TEMP_RANGE_CFG = {
+  '24h': { hours: 24,      unit:'hour', fmt:'HH:mm',      thin:120, label:'last 24h' },
+  '7d':  { hours: 24 * 7,  unit:'day',  fmt:'EEE d MMM',  thin:200, label:'last 7 days' },
+  '30d': { hours: 24 * 30, unit:'day',  fmt:'d MMM',      thin:200, label:'last 30 days' },
+};
+
+function setTempRange(range) {
+  if (range === currentTempRange || !TEMP_RANGE_CFG[range]) return;
+  currentTempRange = range;
+  document.querySelectorAll('#tempRangeButtons .range-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.range === range);
+  });
+  initTempChart(range);
+}
+
+async function initTempChart(range) {
+  range = range || currentTempRange;
+  const cfg = TEMP_RANGE_CFG[range];
   if (!_HA_TOKEN) return;
+  document.getElementById('tempChartTitle').textContent = 'Temperature history — ' + cfg.label;
+
   const tempIds = [ENTITIES.outside, ENTITIES.lounge, ENTITIES.studyTemp,
                    ENTITIES.roofTemp, ENTITIES.living, ENTITIES.kitchenTemp,
-                   ENTITIES.bedroomTemp].join(',');
-  const zoneIds = [ENTITIES.living, ENTITIES.study, ENTITIES.bedroom, ENTITIES.dining].join(',');
-  const startTime = new Date(Date.now() - 24 * 3600000).toISOString();
+                   ENTITIES.bedroomTemp];
+  const startTime = new Date(Date.now() - cfg.hours * 3600000).toISOString();
+  // /api/history/period defaults to a 1-day window from start_time when no
+  // end_time is given — harmless for the 24h case (1 day from "now-24h" is
+  // "now") but silently truncates 7d/30d to a single day near the start of
+  // the range. Always pass it explicitly.
+  const endTime = new Date().toISOString();
 
-  let tempHist = [], zoneHist = [];
-  try {
-    const [tr, zr] = await Promise.all([
-      fetch(HA_URL + '/api/history/period/' + startTime +
-            '?filter_entity_id=' + tempIds + '&minimal_response',
-            { headers:{ Authorization:'Bearer ' + _HA_TOKEN } }),
-      fetch(HA_URL + '/api/history/period/' + startTime +
-            '?filter_entity_id=' + zoneIds,
-            { headers:{ Authorization:'Bearer ' + _HA_TOKEN } }),
-    ]);
-    if (tr.ok) tempHist = await tr.json();
-    if (zr.ok) zoneHist = await zr.json();
-  } catch(e) { console.warn('initTempChart fetch failed:', e); }
-
-  // Map entity id -> time-series points {x: epoch ms, y: value}
   const byId = {};
-  if (Array.isArray(tempHist)) {
-    tempHist.forEach(arr => {
-      if (!arr.length) return;
-      byId[arr[0].entity_id] = thinPts(
-        arr.map(s => ({ x: new Date(s.last_changed).getTime(), y: parseFloat(s.state) }))
-           .filter(p => !isNaN(p.y)), 120);
-    });
-  }
+  let zoneHistMap = {};
 
-  // Zone history map for annotations
-  const zoneHistMap = {};
-  if (Array.isArray(zoneHist)) {
-    zoneHist.forEach(arr => {
-      if (!arr.length) return;
-      const zone = Object.keys(ENTITIES).find(k => ENTITIES[k] === arr[0].entity_id);
-      if (zone) zoneHistMap[zone] = arr;
-    });
+  if (range === '24h') {
+    // Raw history at full resolution, plus zone on/off + setpoint annotations.
+    const zoneIds = [ENTITIES.living, ENTITIES.study, ENTITIES.bedroom, ENTITIES.dining].join(',');
+    try {
+      const [tr, zr] = await Promise.all([
+        fetch(HA_URL + '/api/history/period/' + startTime +
+              '?filter_entity_id=' + tempIds.join(',') + '&end_time=' + endTime + '&minimal_response',
+              { headers:{ Authorization:'Bearer ' + _HA_TOKEN } }),
+        fetch(HA_URL + '/api/history/period/' + startTime +
+              '?filter_entity_id=' + zoneIds + '&end_time=' + endTime,
+              { headers:{ Authorization:'Bearer ' + _HA_TOKEN } }),
+      ]);
+      if (tr.ok) {
+        const tempHist = await tr.json();
+        if (Array.isArray(tempHist)) tempHist.forEach(arr => {
+          if (!arr.length) return;
+          byId[arr[0].entity_id] = thinPts(
+            arr.map(s => ({ x: new Date(s.last_changed).getTime(), y: parseFloat(s.state) }))
+               .filter(p => !isNaN(p.y)), cfg.thin);
+        });
+      }
+      if (zr.ok) {
+        const zoneHist = await zr.json();
+        if (Array.isArray(zoneHist)) zoneHist.forEach(arr => {
+          if (!arr.length) return;
+          const zone = Object.keys(ENTITIES).find(k => ENTITIES[k] === arr[0].entity_id);
+          if (zone) zoneHistMap[zone] = arr;
+        });
+      }
+    } catch(e) { console.warn('initTempChart fetch failed:', e); }
+  } else {
+    // Longer ranges: HA's REST API has no GET endpoint for long-term
+    // statistics (/api/statistics_during_period is websocket-only and 404s
+    // over REST) — bucket raw history into hourly (7d) / daily (30d) means
+    // client-side instead. No zone annotations at this zoom — too dense to
+    // be useful.
+    const bucketMs = range === '30d' ? 24 * 3600000 : 3600000;
+    try {
+      const r = await fetch(
+        HA_URL + '/api/history/period/' + startTime +
+        '?filter_entity_id=' + tempIds.join(',') + '&end_time=' + endTime + '&minimal_response',
+        { headers:{ Authorization:'Bearer ' + _HA_TOKEN } }
+      );
+      if (r.ok) {
+        const hist = await r.json();
+        if (Array.isArray(hist)) hist.forEach(arr => {
+          if (!arr.length) return;
+          const buckets = {};
+          arr.forEach(s => {
+            const v = parseFloat(s.state);
+            if (isNaN(v)) return;
+            const b = Math.floor(new Date(s.last_changed).getTime() / bucketMs) * bucketMs;
+            if (!buckets[b]) buckets[b] = { sum:0, cnt:0 };
+            buckets[b].sum += v; buckets[b].cnt++;
+          });
+          byId[arr[0].entity_id] = Object.entries(buckets)
+            .map(([t, b]) => ({ x: parseInt(t), y: b.sum / b.cnt }))
+            .sort((a, b) => a.x - b.x);
+        });
+      }
+    } catch(e) { console.warn('initTempChart history fetch failed:', e); }
   }
 
   const datasets = [
@@ -1790,24 +1868,27 @@ async function initTempChart() {
       interaction: { mode:'index', intersect:false },
       plugins: {
         legend: { display: false },
-        annotation: { annotations: buildZoneAnnotations(zoneHistMap) },
+        annotation: { annotations: range === '24h' ? buildZoneAnnotations(zoneHistMap) : {} },
         tooltip: {
           backgroundColor:'#1a1e2a', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
           titleFont:{family:"'DM Mono', monospace",size:11},
           bodyFont: {family:"'DM Mono', monospace",size:11},
           titleColor:'rgba(255,255,255,0.5)', bodyColor:'#e8eaf0',
           callbacks: {
-            title: items => items.length
-              ? new Date(items[0].parsed.x).toLocaleTimeString('en-AU',
-                  {weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false})
-              : '',
+            title: items => {
+              if (!items.length) return '';
+              const d = new Date(items[0].parsed.x);
+              return range === '24h'
+                ? d.toLocaleTimeString('en-AU', {weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false})
+                : d.toLocaleDateString('en-AU', {weekday:'short',day:'numeric',month:'short',hour: range==='7d'?'2-digit':undefined,minute: range==='7d'?'2-digit':undefined,hour12:false});
+            },
             label: ctx => ' ' + ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + '\u00b0C'
           }
         }
       },
       scales: {
         x: {
-          type:'time', time:{unit:'hour', displayFormats:{hour:'HH:mm'}},
+          type:'time', time:{unit:cfg.unit, displayFormats:{[cfg.unit]:cfg.fmt}},
           grid:{color:'rgba(255,255,255,0.04)'},
           ticks:{color:'rgba(255,255,255,0.3)',font:{family:"'DM Mono', monospace",size:10},
                  maxTicksLimit:8, maxRotation:0}
@@ -1900,10 +1981,11 @@ async function initHumidityChart() {
   if (!_HA_TOKEN) return;
   const ids = Object.values(HUMIDITY_ENTITIES).join(',');
   const startTime = new Date(Date.now() - 24 * 3600000).toISOString();
+  const endTime = new Date().toISOString();
   let hist;
   try {
     const r = await fetch(
-      HA_URL + '/api/history/period/' + startTime + '?filter_entity_id=' + ids + '&minimal_response',
+      HA_URL + '/api/history/period/' + startTime + '?filter_entity_id=' + ids + '&end_time=' + endTime + '&minimal_response',
       { headers: { Authorization: 'Bearer ' + _HA_TOKEN } }
     );
     if (!r.ok) return;
@@ -2032,6 +2114,7 @@ async function openStatPopup(sensorKey) {
   let raw = statDataCache[sensorKey];
   if (!raw) {
     const startTime = new Date(Date.now() - 7 * 24 * 3600000).toISOString();
+    const endTime   = new Date().toISOString();
 
     // Try statistics API (hourly mean/min/max, long retention)
     try {
@@ -2059,7 +2142,7 @@ async function openStatPopup(sensorKey) {
       try {
         const r = await fetch(
           HA_URL + '/api/history/period/' + startTime +
-          '?filter_entity_id=' + cfg.entity + '&minimal_response',
+          '?filter_entity_id=' + cfg.entity + '&end_time=' + endTime + '&minimal_response',
           { headers:{ Authorization:'Bearer ' + _HA_TOKEN } }
         );
         if (r.ok) {
