@@ -314,6 +314,14 @@
   .range-btn:hover  { border-color: var(--border-hi); color: var(--text); }
   .range-btn.active { border-color: var(--amber); background: var(--amber-dim); color: var(--amber); }
 
+  .band-toggle {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--muted); cursor: pointer; user-select: none;
+    margin-left: 6px;
+  }
+  .band-toggle input { accent-color: var(--amber); cursor: pointer; }
+
   /* ── IZONE PANEL ── */
   .izone-card {
     background: var(--bg2);
@@ -906,6 +914,9 @@
         <button class="range-btn active" data-range="24h" onclick="setTempRange('24h')">24H</button>
         <button class="range-btn" data-range="7d" onclick="setTempRange('7d')">7D</button>
         <button class="range-btn" data-range="30d" onclick="setTempRange('30d')">30D</button>
+        <label class="band-toggle" id="bandToggleWrap" style="display:none">
+          <input type="checkbox" id="bandToggle" checked onchange="setMinMaxBand(this.checked)"> Min/max range
+        </label>
       </div>
       <canvas id="tempChart" height="200"></canvas>
     </div>
@@ -1754,6 +1765,12 @@ function buildZoneAnnotations(zoneHistMap) {
 
 let tempChart = null;
 let currentTempRange = '24h';
+let showMinMaxBand = true;
+
+function setMinMaxBand(on) {
+  showMinMaxBand = on;
+  initTempChart(currentTempRange);
+}
 
 const TEMP_RANGE_CFG = {
   '24h': { hours: 24,      unit:'hour', fmt:'HH:mm',      thin:120, label:'last 24h' },
@@ -1772,16 +1789,20 @@ function setTempRange(range) {
 
 // Bucket a list of {x,y} points into evenly-spaced mean values, or return
 // them unbucketed when bucketMs is falsy.
+// Each returned point carries y (mean) plus lo/hi (min/max seen in that
+// bucket) — used for the optional min/max shadow band on bucketed ranges.
 function bucketPts(pts, bucketMs) {
   if (!bucketMs) return pts;
   const buckets = {};
   pts.forEach(p => {
     const b = Math.floor(p.x / bucketMs) * bucketMs;
-    if (!buckets[b]) buckets[b] = { sum:0, cnt:0 };
+    if (!buckets[b]) buckets[b] = { sum:0, cnt:0, lo:p.y, hi:p.y };
     buckets[b].sum += p.y; buckets[b].cnt++;
+    if (p.y < buckets[b].lo) buckets[b].lo = p.y;
+    if (p.y > buckets[b].hi) buckets[b].hi = p.y;
   });
   return Object.entries(buckets)
-    .map(([t, b]) => ({ x: parseInt(t), y: b.sum / b.cnt }))
+    .map(([t, b]) => ({ x: parseInt(t), y: b.sum / b.cnt, lo: b.lo, hi: b.hi }))
     .sort((a, b) => a.x - b.x);
 }
 
@@ -1813,6 +1834,8 @@ async function initTempChart(range) {
   const cfg = TEMP_RANGE_CFG[range];
   if (!_HA_TOKEN) return;
   document.getElementById('tempChartTitle').textContent = 'Temperature history — ' + cfg.label;
+  document.getElementById('bandToggleWrap').style.display = range === '30d' ? 'flex' : 'none';
+  document.getElementById('bandToggle').checked = showMinMaxBand;
 
   // ENTITIES.living (a climate entity) is fetched separately — see
   // fetchClimateTempSeries — so it's excluded from the plain-sensor bulk call.
@@ -1888,14 +1911,47 @@ async function initTempChart(range) {
     } catch(e) { console.warn('initTempChart history fetch failed:', e); }
   }
 
-  const datasets = [
-    { label:'Outside',   data: byId[ENTITIES.outside]      || [], borderColor:'#f0a020', backgroundColor:'rgba(240,160,32,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-    { label:'Living iZ', data: byId[ENTITIES.living]        || [], borderColor:'#2dd4bf', backgroundColor:'rgba(45,212,191,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-    { label:'Study',     data: byId[ENTITIES.studyTemp]     || [], borderColor:'#60a0f0', backgroundColor:'rgba(96,160,240,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-    { label:'Kitchen',   data: byId[ENTITIES.kitchenTemp]   || [], borderColor:'#4ade80', backgroundColor:'rgba(74,222,128,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-    { label:'Roof',      data: byId[ENTITIES.roofTemp]      || [], borderColor:'#f06050', backgroundColor:'rgba(240,96,80,0.06)',    tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-    { label:'Bedroom',   data: byId[ENTITIES.bedroomTemp]   || [], borderColor:'#fb923c', backgroundColor:'rgba(251,146,60,0.06)',  tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
+  const SERIES = [
+    { entity: ENTITIES.outside,     label:'Outside',   color:'#f0a020' },
+    { entity: ENTITIES.living,      label:'Living iZ', color:'#2dd4bf' },
+    { entity: ENTITIES.studyTemp,   label:'Study',     color:'#60a0f0' },
+    { entity: ENTITIES.kitchenTemp, label:'Kitchen',   color:'#4ade80' },
+    { entity: ENTITIES.roofTemp,    label:'Roof',      color:'#f06050' },
+    { entity: ENTITIES.bedroomTemp, label:'Bedroom',   color:'#fb923c' },
   ];
+
+  // Mean-line datasets stay at indices 0-5 — toggleTempSeries()/the legend
+  // reference these indices directly, so anything added below must be
+  // appended after, not interleaved.
+  const datasets = SERIES.map(s => {
+    const hex = s.color.replace('#','');
+    const r16 = parseInt(hex.slice(0,2),16), g16 = parseInt(hex.slice(2,4),16), b16 = parseInt(hex.slice(4,6),16);
+    return { label:s.label, data: byId[s.entity] || [], borderColor:s.color,
+      backgroundColor:`rgba(${r16},${g16},${b16},0.06)`, tension:0.4, borderWidth:1.5,
+      pointRadius:0, pointHoverRadius:4 };
+  });
+
+  // Optional min/max shadow band (7d/30d only — 24h is raw data with no
+  // per-point min/max to show). One hi/lo pair per series, appended after
+  // the mean lines so the legend/toggle indices above stay stable; fill
+  // references the paired lo dataset by absolute index.
+  if (showMinMaxBand && range !== '24h') {
+    SERIES.forEach(s => {
+      const pts = byId[s.entity] || [];
+      if (!pts.length || pts[0].lo === undefined) return;
+      const loIdx = datasets.length + 1;
+      datasets.push({
+        label: s.label + ' max', data: pts.map(p => ({x:p.x, y:p.hi})),
+        borderColor:'transparent', backgroundColor:s.color + '1a', fill:loIdx,
+        pointRadius:0, borderWidth:0, tension:0.3, order:5,
+      });
+      datasets.push({
+        label: s.label + ' min', data: pts.map(p => ({x:p.x, y:p.lo})),
+        borderColor:'transparent', backgroundColor:'transparent', fill:false,
+        pointRadius:0, borderWidth:0, tension:0.3, order:5,
+      });
+    });
+  }
 
   // 12–38 is a sane default, not a hard bound — widen it when actual data
   // (e.g. a hot roof cavity, or a cold night) falls outside that range
@@ -1926,6 +1982,7 @@ async function initTempChart(range) {
           titleFont:{family:"'DM Mono', monospace",size:11},
           bodyFont: {family:"'DM Mono', monospace",size:11},
           titleColor:'rgba(255,255,255,0.5)', bodyColor:'#e8eaf0',
+          filter: item => !item.dataset.label.endsWith(' max') && !item.dataset.label.endsWith(' min'),
           callbacks: {
             title: items => {
               if (!items.length) return '';
@@ -1961,6 +2018,13 @@ function toggleTempSeries(idx) {
   if (!tempChart) return;
   const meta = tempChart.getDatasetMeta(idx);
   meta.hidden = !meta.hidden;
+  // Band datasets (if present) are appended after the 6 mean lines, in the
+  // same order, as hi/lo pairs — hide/show the pair belonging to this series.
+  const bandIdx = 6 + idx * 2;
+  if (bandIdx + 1 < tempChart.data.datasets.length) {
+    tempChart.getDatasetMeta(bandIdx).hidden = meta.hidden;
+    tempChart.getDatasetMeta(bandIdx + 1).hidden = meta.hidden;
+  }
   tempChart.update();
   const item = document.querySelector('#tempChartLegend [data-idx="' + idx + '"]');
   if (item) item.classList.toggle('hidden', meta.hidden);
