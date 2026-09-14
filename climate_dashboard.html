@@ -895,12 +895,11 @@
         <div class="chart-title" id="tempChartTitle">Temperature history — last 24h</div>
         <div class="legend" id="tempChartLegend">
           <div class="legend-item" data-idx="0" onclick="toggleTempSeries(0)"><div class="legend-dot" style="background:#f0a020"></div>Outside</div>
-          <div class="legend-item" data-idx="1" onclick="toggleTempSeries(1)"><div class="legend-dot" style="background:#2dd4bf"></div>Lounge</div>
+          <div class="legend-item" data-idx="1" onclick="toggleTempSeries(1)"><div class="legend-dot" style="background:#2dd4bf"></div>Living (iZ)</div>
           <div class="legend-item" data-idx="2" onclick="toggleTempSeries(2)"><div class="legend-dot" style="background:#60a0f0"></div>Study</div>
           <div class="legend-item" data-idx="3" onclick="toggleTempSeries(3)"><div class="legend-dot" style="background:#4ade80"></div>Kitchen</div>
           <div class="legend-item" data-idx="4" onclick="toggleTempSeries(4)"><div class="legend-dot" style="background:#f06050"></div>Roof</div>
-          <div class="legend-item" data-idx="5" onclick="toggleTempSeries(5)"><div class="legend-dot" style="background:#a78bfa"></div>Living (iZ)</div>
-          <div class="legend-item" data-idx="6" onclick="toggleTempSeries(6)"><div class="legend-dot" style="background:#fb923c"></div>Bedroom</div>
+          <div class="legend-item" data-idx="5" onclick="toggleTempSeries(5)"><div class="legend-dot" style="background:#fb923c"></div>Bedroom</div>
         </div>
       </div>
       <div class="range-buttons" id="tempRangeButtons">
@@ -1811,7 +1810,7 @@ async function initTempChart(range) {
 
   // ENTITIES.living (a climate entity) is fetched separately — see
   // fetchClimateTempSeries — so it's excluded from the plain-sensor bulk call.
-  const sensorTempIds = [ENTITIES.outside, ENTITIES.lounge, ENTITIES.studyTemp,
+  const sensorTempIds = [ENTITIES.outside, ENTITIES.studyTemp,
                           ENTITIES.roofTemp, ENTITIES.kitchenTemp, ENTITIES.bedroomTemp];
   const startTime = new Date(Date.now() - cfg.hours * 3600000).toISOString();
   // /api/history/period defaults to a 1-day window from start_time when no
@@ -1885,11 +1884,10 @@ async function initTempChart(range) {
 
   const datasets = [
     { label:'Outside',   data: byId[ENTITIES.outside]      || [], borderColor:'#f0a020', backgroundColor:'rgba(240,160,32,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-    { label:'Lounge',    data: byId[ENTITIES.lounge]        || [], borderColor:'#2dd4bf', backgroundColor:'rgba(45,212,191,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
+    { label:'Living iZ', data: byId[ENTITIES.living]        || [], borderColor:'#2dd4bf', backgroundColor:'rgba(45,212,191,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
     { label:'Study',     data: byId[ENTITIES.studyTemp]     || [], borderColor:'#60a0f0', backgroundColor:'rgba(96,160,240,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
     { label:'Kitchen',   data: byId[ENTITIES.kitchenTemp]   || [], borderColor:'#4ade80', backgroundColor:'rgba(74,222,128,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
     { label:'Roof',      data: byId[ENTITIES.roofTemp]      || [], borderColor:'#f06050', backgroundColor:'rgba(240,96,80,0.06)',    tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-    { label:'Living iZ', data: byId[ENTITIES.living]        || [], borderColor:'#a78bfa', backgroundColor:'rgba(167,139,250,0.06)', tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4, borderDash:[4,3] },
     { label:'Bedroom',   data: byId[ENTITIES.bedroomTemp]   || [], borderColor:'#fb923c', backgroundColor:'rgba(251,146,60,0.06)',  tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
   ];
 
