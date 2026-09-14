@@ -1709,6 +1709,12 @@ function buildZoneAnnotations(zoneHistMap) {
       const ev  = events[i];
       const isOn = ev.state !== 'off' && ev.state !== 'unavailable' && ev.state !== 'unknown';
       if (!isOn) continue;
+      // HA logs a new history row on any attribute change (setpoint tweaks,
+      // current_temp updates), not just actual on/off transitions — so a
+      // continuous "on" run is usually many rows. Only label the first box
+      // of each run instead of repeating the zone name on every row.
+      const prevOn = i > 0 && events[i-1].state !== 'off' &&
+        events[i-1].state !== 'unavailable' && events[i-1].state !== 'unknown';
       const xMin = new Date(ev.last_changed).getTime();
       const xMax = i + 1 < events.length
         ? new Date(events[i+1].last_changed).getTime()
@@ -1718,7 +1724,7 @@ function buildZoneAnnotations(zoneHistMap) {
         backgroundColor: col.bg, borderWidth:0,
         drawTime:'beforeDatasetsDraw',
         label:{
-          display:true,
+          display: !prevOn,
           content: zone.charAt(0).toUpperCase() + zone.slice(1),
           position:{x:'start',y:'start'},
           font:{family:"'DM Mono', monospace",size:9},
