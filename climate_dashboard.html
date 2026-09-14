@@ -822,7 +822,7 @@
   <div class="section-divider">Current temperatures</div>
   <div class="grid-top">
 
-    <div class="card temp-card c-amber" onclick="openStatPopup('outside')">
+    <div class="card temp-card c-amber" role="button" tabindex="0" onclick="openStatPopup('outside')">
       <div class="card-accent-bar"></div>
       <div class="card-label">Outside</div>
       <div class="big-temp"><span class="val-outside">—</span><span class="unit">°</span></div>
@@ -830,7 +830,7 @@
       <div class="card-hint">↗ 7-day trend</div>
     </div>
 
-    <div class="card temp-card c-teal" onclick="openStatPopup('lounge')">
+    <div class="card temp-card c-teal" role="button" tabindex="0" onclick="openStatPopup('lounge')">
       <div class="card-accent-bar"></div>
       <div class="card-label">Lounge</div>
       <div class="big-temp"><span class="val-lounge">—</span><span class="unit">°</span></div>
@@ -838,7 +838,7 @@
       <div class="card-hint">↗ 7-day trend</div>
     </div>
 
-    <div class="card temp-card c-blue" onclick="openStatPopup('study')">
+    <div class="card temp-card c-blue" role="button" tabindex="0" onclick="openStatPopup('study')">
       <div class="card-accent-bar"></div>
       <div class="card-label">Study</div>
       <div class="big-temp"><span class="val-study">—</span><span class="unit">°</span></div>
@@ -846,7 +846,7 @@
       <div class="card-hint">↗ 7-day trend</div>
     </div>
 
-    <div class="card temp-card c-green" onclick="openStatPopup('kitchen')">
+    <div class="card temp-card c-green" role="button" tabindex="0" onclick="openStatPopup('kitchen')">
       <div class="card-accent-bar"></div>
       <div class="card-label">Kitchen</div>
       <div class="big-temp"><span class="val-kitchen">—</span><span class="unit">°</span></div>
@@ -854,7 +854,7 @@
       <div class="card-hint">↗ 7-day trend</div>
     </div>
 
-    <div class="card temp-card c-coral" onclick="openStatPopup('roof')">
+    <div class="card temp-card c-coral" role="button" tabindex="0" onclick="openStatPopup('roof')">
       <div class="card-accent-bar"></div>
       <div class="card-label">Roof cavity</div>
       <div class="big-temp"><span class="val-roof">—</span><span class="unit">°</span></div>
@@ -1179,21 +1179,22 @@ const ENTITIES = {
   weather:    'weather.forecast_home',
 };
 
+// Shared between applyControllerState() and setMode() — single source of truth.
+const MODE_CLASS  = { off:'active-off', cool:'active-cool', heat:'active-heat', heat_cool:'active-auto', fan_only:'active-fan', dry:'active-dry' };
+const MODE_BTN_ID = { off:'btn-off', cool:'btn-cool', heat:'btn-heat', heat_cool:'btn-auto', fan_only:'btn-fan', dry:'btn-dry' };
+
 // ── TOKEN RESOLUTION ──
 // Priority: 1) ./token file  2) localStorage  3) climate_cast_config.js  4) manual overlay
 async function resolveToken() {
-  // 1. Try fetching a token file from the same folder — only when NOT served
-  //    from the HA server itself (avoids a 404 to /local/token on HA-hosted pages)
-  const isHAOrigin = /homeassistant|hassio|local|8123|slink42/.test(window.location.origin);
-  if (!isHAOrigin) {
-    try {
-      const r = await fetch('./token', { cache: 'no-store' });
-      if (r.ok) {
-        const t = (await r.text()).trim();
-        if (t) { _HA_TOKEN = t; return; }
-      }
-    } catch { /* file not present — fall through */ }
-  }
+  // 1. Try fetching a token file from the same folder. A 404 here is
+  //    expected/harmless when no token file is deployed — falls through.
+  try {
+    const r = await fetch('./token', { cache: 'no-store' });
+    if (r.ok) {
+      const t = (await r.text()).trim();
+      if (t) { _HA_TOKEN = t; return; }
+    }
+  } catch { /* file not present — fall through */ }
 
   // 2. Try localStorage
   const stored = localStorage.getItem('ha_climate_token');
@@ -1246,19 +1247,18 @@ async function haCall(service, data) {
   }
 }
 
-async function haGetState(entityId) {
-  try {
-    const r = await fetch(`${HA_URL}/api/states/${entityId}`, { headers: { Authorization: `Bearer ${_HA_TOKEN}` } });
-    if (!r.ok) throw new Error(r.status);
-    return await r.json();
-  } catch { return null; }
-}
-
+// Single bulk call instead of one request per entity — HA returns every
+// entity's state in one response, which we filter down client-side.
 async function haGetStates(ids) {
-  const results = await Promise.all(ids.map(haGetState));
-  const map = {};
-  ids.forEach((id, i) => { if (results[i]) map[id] = results[i]; });
-  return map;
+  try {
+    const r = await fetch(`${HA_URL}/api/states`, { headers: { Authorization: `Bearer ${_HA_TOKEN}` } });
+    if (!r.ok) throw new Error(r.status);
+    const all = await r.json();
+    const idSet = new Set(ids);
+    const map = {};
+    all.forEach(s => { if (idSet.has(s.entity_id)) map[s.entity_id] = s; });
+    return map;
+  } catch { return {}; }
 }
 
 // ── CLOCK ──
@@ -1272,6 +1272,14 @@ function updateClock() {
 }
 updateClock();
 setInterval(updateClock, 1000);
+
+// Temp cards are role="button" divs (for layout reasons) — wire up
+// keyboard activation since divs don't get it for free like <button>.
+document.querySelectorAll('.temp-card[role="button"]').forEach(card => {
+  card.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+  });
+});
 
 // ── TOAST ──
 function showToast(msg, color) {
@@ -1300,10 +1308,8 @@ function applyControllerState(state) {
   const fan    = state.attributes.fan_mode || 'auto';
   const supply = state.attributes.supply_temperature;
 
-  const modeMap   = { off:'active-off', cool:'active-cool', heat:'active-heat', heat_cool:'active-auto', fan_only:'active-fan', dry:'active-dry' };
-  const modeBtnId = { off:'btn-off', cool:'btn-cool', heat:'btn-heat', heat_cool:'btn-auto', fan_only:'btn-fan', dry:'btn-dry' };
-  Object.values(modeBtnId).forEach(id => { document.getElementById(id).className = 'mode-btn'; });
-  if (modeBtnId[mode]) document.getElementById(modeBtnId[mode]).classList.add(modeMap[mode] || '');
+  Object.values(MODE_BTN_ID).forEach(id => { document.getElementById(id).className = 'mode-btn'; });
+  if (MODE_BTN_ID[mode]) document.getElementById(MODE_BTN_ID[mode]).classList.add(MODE_CLASS[mode] || '');
   currentMode = mode;
 
   const dot = document.getElementById('sysDot');
@@ -1461,8 +1467,19 @@ async function loadLiveState() {
     ENTITIES.outside, ENTITIES.lounge, ENTITIES.studyTemp,
     ENTITIES.kitchenTemp, ENTITIES.kitchenHum, ENTITIES.roofTemp,
     ENTITIES.weather,
+    ...Object.values(HUMIDITY_ENTITIES),
   ];
   const states = await haGetStates(ids);
+
+  // A bulk fetch that returned nothing usually means the connection/token
+  // is bad — reflect that rather than leaving stale "connected" status up.
+  if (Object.keys(states).length === 0) {
+    const el = document.getElementById('haStatus');
+    el.textContent = '⚠ cannot reach HA'; el.style.color = 'var(--coral)';
+    return;
+  }
+  const statusEl = document.getElementById('haStatus');
+  statusEl.textContent = '● connected to HA'; statusEl.style.color = 'var(--green)';
 
   applyControllerState(states[ENTITIES.controller]);
   applyZoneState('living',  states[ENTITIES.living]);
@@ -1491,28 +1508,29 @@ async function loadLiveState() {
       if (warn) warn.textContent = h > 60 ? '⚠ slightly above ideal' : h < 40 ? '⚠ slightly dry' : '✓ comfortable';
     }
   }
+
+  updateHumidityChart(states);
 }
 
 // ── INIT ──
 (async () => {
   await resolveToken();
 
-  // Connection status check
-  const el = document.getElementById('haStatus');
-  try {
-    const r = await fetch(`${HA_URL}/api/`, { headers: { Authorization: `Bearer ${_HA_TOKEN}` } });
-    if (r.ok) { el.textContent = '● connected to HA'; el.style.color = 'var(--green)'; }
-    else       { el.textContent = '⚠ auth failed — check token'; el.style.color = 'var(--coral)'; }
-  } catch { el.textContent = '⚠ cannot reach HA'; el.style.color = 'var(--coral)'; }
-
   loadLiveState();
   setInterval(loadLiveState, 30000);
   initTempChart();
   initHumidityChart();
-  setInterval(updateHumidityChart, 30000);
+  // Periodically reseed both charts from HA history — without this the temp
+  // chart's "last 24h" window never advances after initial load, and the
+  // humidity chart's rolling window shrinks as live points push old ones out.
+  setInterval(initTempChart, 10 * 60000);
+  setInterval(initHumidityChart, 10 * 60000);
 })();
 
 // ── SETPOINTS ──
+// UI updates instantly on every tap; the actual API call is debounced so
+// rapid +/- taps send one request instead of racing one per tap.
+const _spDebounce = {};
 async function adjustZoneSetpoint(zone, delta) {
   const prevSp = zoneSetpoints[zone];
   zoneSetpoints[zone] = Math.round((zoneSetpoints[zone] + delta) * 2) / 2;
@@ -1520,23 +1538,23 @@ async function adjustZoneSetpoint(zone, delta) {
   const sp = zoneSetpoints[zone];
   document.getElementById(`sp-${zone}`).textContent = sp.toFixed(1) + '°';
 
-  const label = zone.charAt(0).toUpperCase() + zone.slice(1);
-  const ok = await haCall('climate.set_temperature', { entity_id: ENTITIES[zone], temperature: sp });
-  if (ok) {
-    showToast(`${label} → ${sp.toFixed(1)}°C`);
-  } else {
-    zoneSetpoints[zone] = prevSp;
-    document.getElementById(`sp-${zone}`).textContent = prevSp.toFixed(1) + '°';
-  }
+  clearTimeout(_spDebounce[zone]);
+  _spDebounce[zone] = setTimeout(async () => {
+    const label = zone.charAt(0).toUpperCase() + zone.slice(1);
+    const ok = await haCall('climate.set_temperature', { entity_id: ENTITIES[zone], temperature: sp });
+    if (ok) {
+      showToast(`${label} → ${sp.toFixed(1)}°C`);
+    } else {
+      zoneSetpoints[zone] = prevSp;
+      document.getElementById(`sp-${zone}`).textContent = prevSp.toFixed(1) + '°';
+    }
+  }, 500);
 }
 
 // ── MODE ──
-const modeMap   = { off:'active-off', cool:'active-cool', heat:'active-heat', heat_cool:'active-auto', fan_only:'active-fan', dry:'active-dry' };
-const modeBtnId = { off:'btn-off', cool:'btn-cool', heat:'btn-heat', heat_cool:'btn-auto', fan_only:'btn-fan', dry:'btn-dry' };
-
 async function setMode(mode) {
-  Object.values(modeBtnId).forEach(id => { document.getElementById(id).className = 'mode-btn'; });
-  document.getElementById(modeBtnId[mode]).classList.add(modeMap[mode]);
+  Object.values(MODE_BTN_ID).forEach(id => { document.getElementById(id).className = 'mode-btn'; });
+  document.getElementById(MODE_BTN_ID[mode]).classList.add(MODE_CLASS[mode]);
   currentMode = mode;
   const dot = document.getElementById('sysDot');
   const lbl = document.getElementById('sysLabel');
@@ -1907,10 +1925,10 @@ async function initHumidityChart() {
 }
 
 // Append current live readings every 30s
-async function updateHumidityChart() {
-  if (!_HA_TOKEN) return;
-  const ids = Object.values(HUMIDITY_ENTITIES);
-  const states = await haGetStates(ids);
+// Takes the states map already fetched by loadLiveState — avoids a second
+// bulk request every tick.
+function updateHumidityChart(states) {
+  if (!_HA_TOKEN || !states) return;
   const now = Date.now();
 
   const liveVals = [
@@ -1921,6 +1939,10 @@ async function updateHumidityChart() {
     parseFloat(states[HUMIDITY_ENTITIES.outside]     ? states[HUMIDITY_ENTITIES.outside].state     : NaN),
   ];
 
+  // Drop points older than 24h instead of capping by count — a fixed count
+  // cap shrinks the visible window over time as live points arrive faster
+  // than the seeded history ages out.
+  const cutoff = now - 24 * 3600000;
   liveVals.forEach((val, i) => {
     if (isNaN(val)) return;
     const ds   = humidityChart.data.datasets[i];
@@ -1928,7 +1950,7 @@ async function updateHumidityChart() {
     // Only add a new point if at least 1 minute has elapsed
     if (!last || now - last.x > 60000) {
       ds.data.push({ x: now, y: val });
-      if (ds.data.length > 200) ds.data.shift();
+      while (ds.data.length && ds.data[0].x < cutoff) ds.data.shift();
     }
   });
 
