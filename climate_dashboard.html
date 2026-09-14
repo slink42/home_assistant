@@ -1897,6 +1897,18 @@ async function initTempChart(range) {
     { label:'Bedroom',   data: byId[ENTITIES.bedroomTemp]   || [], borderColor:'#fb923c', backgroundColor:'rgba(251,146,60,0.06)',  tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
   ];
 
+  // 12–38 is a sane default, not a hard bound — widen it when actual data
+  // (e.g. a hot roof cavity, or a cold night) falls outside that range
+  // instead of clipping the line at the axis edge.
+  const allVals = datasets.flatMap(ds => ds.data.map(p => p.y)).filter(v => !isNaN(v));
+  let yMin = 12, yMax = 38;
+  if (allVals.length) {
+    const dataLo = Math.min(...allVals), dataHi = Math.max(...allVals);
+    const pad = Math.max((dataHi - dataLo) * 0.1, 1);
+    yMin = Math.min(12, Math.floor(dataLo - pad));
+    yMax = Math.max(38, Math.ceil(dataHi + pad));
+  }
+
   const ctx = document.getElementById('tempChart').getContext('2d');
   if (tempChart) { tempChart.destroy(); tempChart = null; }
 
@@ -1934,7 +1946,7 @@ async function initTempChart(range) {
                  maxTicksLimit:8, maxRotation:0}
         },
         y: {
-          min:12, max:38,
+          min:yMin, max:yMax,
           grid:{color:'rgba(255,255,255,0.04)'},
           ticks:{color:'rgba(255,255,255,0.3)',font:{family:"'DM Mono', monospace",size:10},
                  callback: v => v + '\u00b0'}
