@@ -1276,7 +1276,7 @@ async function loadState() {
   const ids = [
     ENTITIES.controller, ENTITIES.living, ENTITIES.study, ENTITIES.bedroom, ENTITIES.dining,
     'sensor.thermometer_outside_temperature',
-    'sensor.thermometer_and_presence_lounge_temperature',
+    'sensor.living_room_izone_temperature',
     'sensor.thermometer_study_temperature',
     'sensor.alpstuga_air_quality_monitor_temperature',
     'sensor.alpstuga_air_quality_monitor_humidity',
@@ -1293,7 +1293,7 @@ async function loadState() {
 
   const sens = {
     'sensor.thermometer_outside_temperature':            'val-outside',
-    'sensor.thermometer_and_presence_lounge_temperature':'val-lounge',
+    'sensor.living_room_izone_temperature':'val-lounge',
     'sensor.thermometer_study_temperature':              'val-study',
     'sensor.alpstuga_air_quality_monitor_temperature': 'val-kitchen',
     'sensor.alpstuga_air_quality_monitor_humidity':    'val-humidity',
@@ -1362,7 +1362,7 @@ async function loadState() {
 
 const SENSOR_ENTITY_MAP = {
   outside:  'sensor.thermometer_outside_temperature',
-  lounge:   'sensor.thermometer_and_presence_lounge_temperature',
+  lounge:   'sensor.living_room_izone_temperature',
   study:    'sensor.thermometer_study_temperature',
   kitchen:  'sensor.alpstuga_air_quality_monitor_temperature',
   roof:     'sensor.thermometer_roof_temperature',
@@ -1614,6 +1614,17 @@ async function openChart(sensorKey) {
     });
   }
 
+  // cfg.min/cfg.max are sane defaults, not hard bounds — widen them when
+  // the actual 24h data falls outside that range instead of clipping it.
+  const allVals = pts.map(p => p.y).filter(v => !isNaN(v));
+  let yMin = cfg.min, yMax = cfg.max;
+  if (allVals.length) {
+    const dataLo = Math.min(...allVals), dataHi = Math.max(...allVals);
+    const pad = Math.max((dataHi - dataLo) * 0.1, 1);
+    yMin = Math.min(cfg.min, Math.floor(dataLo - pad));
+    yMax = Math.max(cfg.max, Math.ceil(dataHi + pad));
+  }
+
   popupChartInstance = new Chart(canvas, {
     type: 'line',
     data: {
@@ -1652,8 +1663,8 @@ async function openChart(sensorKey) {
           ticks: { color:'rgba(255,255,255,0.3)', font:{ family:"'DM Mono', monospace", size:10 }, maxTicksLimit:8, maxRotation:0 }
         },
         y: {
-          min: cfg.min,
-          max: cfg.max,
+          min: yMin,
+          max: yMax,
           grid:  { color:'rgba(255,255,255,0.05)' },
           ticks: { color:'rgba(255,255,255,0.3)', font:{ family:"'DM Mono', monospace", size:10 }, callback: v => v + cfg.unit }
         }
