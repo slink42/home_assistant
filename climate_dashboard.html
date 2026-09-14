@@ -1765,15 +1765,54 @@ function setTempRange(range) {
   initTempChart(range);
 }
 
+// Bucket a list of {x,y} points into evenly-spaced mean values, or return
+// them unbucketed when bucketMs is falsy.
+function bucketPts(pts, bucketMs) {
+  if (!bucketMs) return pts;
+  const buckets = {};
+  pts.forEach(p => {
+    const b = Math.floor(p.x / bucketMs) * bucketMs;
+    if (!buckets[b]) buckets[b] = { sum:0, cnt:0 };
+    buckets[b].sum += p.y; buckets[b].cnt++;
+  });
+  return Object.entries(buckets)
+    .map(([t, b]) => ({ x: parseInt(t), y: b.sum / b.cnt }))
+    .sort((a, b) => a.x - b.x);
+}
+
+// climate.* entities have no numeric .state (it's the hvac mode string like
+// "heat_cool") — their current temperature lives in attributes, which
+// minimal_response strips after the first history point. Fetch separately
+// without it, and read current_temperature explicitly.
+async function fetchClimateTempSeries(entityId, startTime, endTime, bucketMs) {
+  try {
+    const r = await fetch(
+      HA_URL + '/api/history/period/' + startTime +
+      '?filter_entity_id=' + entityId + '&end_time=' + endTime,
+      { headers:{ Authorization:'Bearer ' + _HA_TOKEN } }
+    );
+    if (!r.ok) return [];
+    const hist = await r.json();
+    const arr = Array.isArray(hist) && hist[0];
+    if (!arr || !arr.length) return [];
+    const pts = arr
+      .map(s => ({ x: new Date(s.last_changed).getTime(),
+                    y: parseFloat(s.attributes && s.attributes.current_temperature) }))
+      .filter(p => !isNaN(p.y));
+    return bucketPts(pts, bucketMs);
+  } catch(e) { console.warn('fetchClimateTempSeries failed:', e); return []; }
+}
+
 async function initTempChart(range) {
   range = range || currentTempRange;
   const cfg = TEMP_RANGE_CFG[range];
   if (!_HA_TOKEN) return;
   document.getElementById('tempChartTitle').textContent = 'Temperature history — ' + cfg.label;
 
-  const tempIds = [ENTITIES.outside, ENTITIES.lounge, ENTITIES.studyTemp,
-                   ENTITIES.roofTemp, ENTITIES.living, ENTITIES.kitchenTemp,
-                   ENTITIES.bedroomTemp];
+  // ENTITIES.living (a climate entity) is fetched separately — see
+  // fetchClimateTempSeries — so it's excluded from the plain-sensor bulk call.
+  const sensorTempIds = [ENTITIES.outside, ENTITIES.lounge, ENTITIES.studyTemp,
+                          ENTITIES.roofTemp, ENTITIES.kitchenTemp, ENTITIES.bedroomTemp];
   const startTime = new Date(Date.now() - cfg.hours * 3600000).toISOString();
   // /api/history/period defaults to a 1-day window from start_time when no
   // end_time is given — harmless for the 24h case (1 day from "now-24h" is
@@ -1788,13 +1827,14 @@ async function initTempChart(range) {
     // Raw history at full resolution, plus zone on/off + setpoint annotations.
     const zoneIds = [ENTITIES.living, ENTITIES.study, ENTITIES.bedroom, ENTITIES.dining].join(',');
     try {
-      const [tr, zr] = await Promise.all([
+      const [tr, zr, livingPts] = await Promise.all([
         fetch(HA_URL + '/api/history/period/' + startTime +
-              '?filter_entity_id=' + tempIds.join(',') + '&end_time=' + endTime + '&minimal_response',
+              '?filter_entity_id=' + sensorTempIds.join(',') + '&end_time=' + endTime + '&minimal_response',
               { headers:{ Authorization:'Bearer ' + _HA_TOKEN } }),
         fetch(HA_URL + '/api/history/period/' + startTime +
               '?filter_entity_id=' + zoneIds + '&end_time=' + endTime,
               { headers:{ Authorization:'Bearer ' + _HA_TOKEN } }),
+        fetchClimateTempSeries(ENTITIES.living, startTime, endTime, null),
       ]);
       if (tr.ok) {
         const tempHist = await tr.json();
@@ -1805,6 +1845,7 @@ async function initTempChart(range) {
                .filter(p => !isNaN(p.y)), cfg.thin);
         });
       }
+      byId[ENTITIES.living] = thinPts(livingPts, cfg.thin);
       if (zr.ok) {
         const zoneHist = await zr.json();
         if (Array.isArray(zoneHist)) zoneHist.forEach(arr => {
@@ -1822,28 +1863,23 @@ async function initTempChart(range) {
     // be useful.
     const bucketMs = range === '30d' ? 24 * 3600000 : 3600000;
     try {
-      const r = await fetch(
-        HA_URL + '/api/history/period/' + startTime +
-        '?filter_entity_id=' + tempIds.join(',') + '&end_time=' + endTime + '&minimal_response',
-        { headers:{ Authorization:'Bearer ' + _HA_TOKEN } }
-      );
+      const [r, livingPts] = await Promise.all([
+        fetch(HA_URL + '/api/history/period/' + startTime +
+              '?filter_entity_id=' + sensorTempIds.join(',') + '&end_time=' + endTime + '&minimal_response',
+              { headers:{ Authorization:'Bearer ' + _HA_TOKEN } }),
+        fetchClimateTempSeries(ENTITIES.living, startTime, endTime, bucketMs),
+      ]);
       if (r.ok) {
         const hist = await r.json();
         if (Array.isArray(hist)) hist.forEach(arr => {
           if (!arr.length) return;
-          const buckets = {};
-          arr.forEach(s => {
-            const v = parseFloat(s.state);
-            if (isNaN(v)) return;
-            const b = Math.floor(new Date(s.last_changed).getTime() / bucketMs) * bucketMs;
-            if (!buckets[b]) buckets[b] = { sum:0, cnt:0 };
-            buckets[b].sum += v; buckets[b].cnt++;
-          });
-          byId[arr[0].entity_id] = Object.entries(buckets)
-            .map(([t, b]) => ({ x: parseInt(t), y: b.sum / b.cnt }))
-            .sort((a, b) => a.x - b.x);
+          const pts = arr
+            .map(s => ({ x: new Date(s.last_changed).getTime(), y: parseFloat(s.state) }))
+            .filter(p => !isNaN(p.y));
+          byId[arr[0].entity_id] = bucketPts(pts, bucketMs);
         });
       }
+      byId[ENTITIES.living] = livingPts;
     } catch(e) { console.warn('initTempChart history fetch failed:', e); }
   }
 
