@@ -1043,10 +1043,10 @@
   </div>
 
   <!-- HUMIDITY CHART -->
-  <div class="section-divider">Humidity — last 24h</div>
+  <div class="section-divider">Humidity</div>
   <div class="chart-card">
     <div class="chart-header">
-      <div class="chart-title">Indoor &amp; outdoor humidity</div>
+      <div class="chart-title" id="humidityChartTitle">Indoor &amp; outdoor humidity — last 24h</div>
       <div class="legend" id="humidityChartLegend">
         <div class="legend-item" data-idx="0" onclick="toggleHumiditySeries(0)"><div class="legend-dot" style="background:#60a0f0"></div>Kitchen</div>
         <div class="legend-item" data-idx="1" onclick="toggleHumiditySeries(1)"><div class="legend-dot" style="background:#a78bfa"></div>Bathroom (therm.)</div>
@@ -1054,6 +1054,14 @@
         <div class="legend-item" data-idx="3" onclick="toggleHumiditySeries(3)"><div class="legend-dot" style="background:#2dd4bf"></div>Lounge</div>
         <div class="legend-item" data-idx="4" onclick="toggleHumiditySeries(4)"><div class="legend-dot" style="background:#f0a020"></div>Outside</div>
       </div>
+    </div>
+    <div class="range-buttons" id="humidityRangeButtons">
+      <button class="range-btn active" data-range="24h" onclick="setHumidityRange('24h')">24H</button>
+      <button class="range-btn" data-range="7d" onclick="setHumidityRange('7d')">7D</button>
+      <button class="range-btn" data-range="30d" onclick="setHumidityRange('30d')">30D</button>
+      <label class="band-toggle" id="humidityBandToggleWrap" style="display:none">
+        <input type="checkbox" id="humidityBandToggle" checked onchange="setHumidityMinMaxBand(this.checked)"> Min/max range
+      </label>
     </div>
     <!-- comfort band annotation -->
     <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:10px">
@@ -2034,6 +2042,13 @@ function toggleHumiditySeries(idx) {
   if (!humidityChart) return;
   const meta = humidityChart.getDatasetMeta(idx);
   meta.hidden = !meta.hidden;
+  // Band datasets (if present) are appended after the 5 mean lines, in the
+  // same order, as hi/lo pairs — hide/show the pair belonging to this series.
+  const bandIdx = 5 + idx * 2;
+  if (bandIdx + 1 < humidityChart.data.datasets.length) {
+    humidityChart.getDatasetMeta(bandIdx).hidden = meta.hidden;
+    humidityChart.getDatasetMeta(bandIdx + 1).hidden = meta.hidden;
+  }
   humidityChart.update();
   const item = document.querySelector('#humidityChartLegend [data-idx="' + idx + '"]');
   if (item) item.classList.toggle('hidden', meta.hidden);
@@ -2052,99 +2067,156 @@ const HUMIDITY_ENTITIES = {
   outside:     'sensor.thermometer_outside_humidity',
 };
 
-const humCtx = document.getElementById('humidityChart').getContext('2d');
-const humidityChart = new Chart(humCtx, {
-  type: 'line',
-  data: {
-    datasets: [
-      { label:'Kitchen',            data:[], borderColor:'#60a0f0', backgroundColor:'rgba(96,160,240,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-      { label:'Bathroom (therm)',   data:[], borderColor:'#a78bfa', backgroundColor:'rgba(167,139,250,0.06)', tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-      { label:'Bathroom (presence)',data:[], borderColor:'#f06050', backgroundColor:'rgba(240,96,80,0.06)',    tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4, borderDash:[3,2] },
-      { label:'Lounge',             data:[], borderColor:'#2dd4bf', backgroundColor:'rgba(45,212,191,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-      { label:'Outside',            data:[], borderColor:'#f0a020', backgroundColor:'rgba(240,160,32,0.06)',   tension:0.4, borderWidth:1.5, pointRadius:0, pointHoverRadius:4 },
-    ]
-  },
-  options: {
-    responsive: true,
-    parsing: false,
-    interaction: { mode:'index', intersect:false },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor:'#1a1e2a', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
-        titleFont:{ family:"'DM Mono', monospace", size:11 },
-        bodyFont: { family:"'DM Mono', monospace", size:11 },
-        titleColor:'rgba(255,255,255,0.5)', bodyColor:'#e8eaf0',
-        callbacks: {
-          title: items => {
-            if (!items.length) return '';
-            return new Date(items[0].parsed.x).toLocaleTimeString('en-AU',
-              { weekday:'short', hour:'2-digit', minute:'2-digit', hour12:false });
-          },
-          label: ctx => ' ' + ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(0) + '%'
-        }
-      }
-    },
-    scales: {
-      x: {
-        type: 'time',
-        time: { unit:'hour', displayFormats:{ hour:'HH:mm' } },
-        grid: { color:'rgba(255,255,255,0.04)' },
-        ticks: { color:'rgba(255,255,255,0.3)', font:{family:"'DM Mono', monospace",size:10}, maxTicksLimit:10, maxRotation:0 }
-      },
-      y: {
-        min: 30, max: 100,
-        grid: { color:'rgba(255,255,255,0.04)' },
-        ticks: { color:'rgba(255,255,255,0.3)', font:{family:"'DM Mono', monospace",size:10}, callback: v => v+'%' }
-      }
-    }
-  }
-});
+const HUMIDITY_SERIES = [
+  { key:'kitchen',      label:'Kitchen',             color:'#60a0f0' },
+  { key:'bathTherm',    label:'Bathroom (therm)',    color:'#a78bfa' },
+  { key:'bathPresence', label:'Bathroom (presence)', color:'#f06050' },
+  { key:'lounge',       label:'Lounge',              color:'#2dd4bf' },
+  { key:'outside',      label:'Outside',             color:'#f0a020' },
+];
 
-// Seed chart with 24h history from HA on init
-async function initHumidityChart() {
-  if (!_HA_TOKEN) return;
-  const ids = Object.values(HUMIDITY_ENTITIES).join(',');
-  const startTime = new Date(Date.now() - 24 * 3600000).toISOString();
-  const endTime = new Date().toISOString();
-  let hist;
-  try {
-    const r = await fetch(
-      HA_URL + '/api/history/period/' + startTime + '?filter_entity_id=' + ids + '&end_time=' + endTime + '&minimal_response',
-      { headers: { Authorization: 'Bearer ' + _HA_TOKEN } }
-    );
-    if (!r.ok) return;
-    hist = await r.json();
-  } catch { return; }
-  if (!Array.isArray(hist)) return;
+let humidityChart = null;
+let currentHumidityRange = '24h';
+let showHumidityMinMaxBand = true;
 
-  const order = Object.values(HUMIDITY_ENTITIES);
-  order.forEach((entityId, i) => {
-    const entity = hist.find(arr => arr.length && arr[0].entity_id === entityId);
-    if (!entity) return;
-    // Use epoch ms as x — time scale handles ordering and display correctly
-    const pts = entity
-      .map(s => ({ x: new Date(s.last_changed).getTime(), y: parseFloat(s.state) }))
-      .filter(p => !isNaN(p.y));   // drop unavailable/unknown states
-    humidityChart.data.datasets[i].data = thinPts(pts, 120);
+function setHumidityRange(range) {
+  if (range === currentHumidityRange || !TEMP_RANGE_CFG[range]) return;
+  currentHumidityRange = range;
+  document.querySelectorAll('#humidityRangeButtons .range-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.range === range);
   });
-  humidityChart.update('none');
+  initHumidityChart(range);
 }
 
-// Append current live readings every 30s
-// Takes the states map already fetched by loadLiveState — avoids a second
-// bulk request every tick.
+function setHumidityMinMaxBand(on) {
+  showHumidityMinMaxBand = on;
+  initHumidityChart(currentHumidityRange);
+}
+
+// Seed/reseed chart from HA history for the selected range. 24h uses raw
+// history; 7d/30d bucket into hourly/daily means client-side (same reasoning
+// as the temp chart — see initTempChart for why: no REST statistics
+// endpoint, and /api/history/period needs an explicit end_time).
+async function initHumidityChart(range) {
+  range = range || currentHumidityRange;
+  const cfg = TEMP_RANGE_CFG[range];
+  if (!_HA_TOKEN) return;
+  document.getElementById('humidityChartTitle').textContent = 'Indoor & outdoor humidity — ' + cfg.label;
+  document.getElementById('humidityBandToggleWrap').style.display = range === '30d' ? 'flex' : 'none';
+  document.getElementById('humidityBandToggle').checked = showHumidityMinMaxBand;
+
+  const ids = Object.values(HUMIDITY_ENTITIES);
+  const startTime = new Date(Date.now() - cfg.hours * 3600000).toISOString();
+  const endTime = new Date().toISOString();
+  const bucketMs = range === '24h' ? null : (range === '30d' ? 24 * 3600000 : 3600000);
+
+  const byKey = {};
+  try {
+    const r = await fetch(
+      HA_URL + '/api/history/period/' + startTime + '?filter_entity_id=' + ids.join(',') + '&end_time=' + endTime + '&minimal_response',
+      { headers: { Authorization: 'Bearer ' + _HA_TOKEN } }
+    );
+    if (r.ok) {
+      const hist = await r.json();
+      if (Array.isArray(hist)) {
+        HUMIDITY_SERIES.forEach(s => {
+          const entityId = HUMIDITY_ENTITIES[s.key];
+          const arr = hist.find(a => a.length && a[0].entity_id === entityId);
+          if (!arr) return;
+          const pts = arr
+            .map(item => ({ x: new Date(item.last_changed).getTime(), y: parseFloat(item.state) }))
+            .filter(p => !isNaN(p.y));
+          byKey[s.key] = bucketMs ? bucketPts(pts, bucketMs) : thinPts(pts, cfg.thin);
+        });
+      }
+    }
+  } catch(e) { console.warn('initHumidityChart fetch failed:', e); }
+
+  const datasets = HUMIDITY_SERIES.map(s => ({
+    label: s.label, data: byKey[s.key] || [], borderColor: s.color,
+    backgroundColor: s.color + '0f', tension:0.4, borderWidth:1.5,
+    pointRadius:0, pointHoverRadius:4,
+  }));
+
+  // Optional min/max shadow band — same pattern as the temp chart. Appended
+  // after the 5 mean lines so legend/toggle indices above stay stable.
+  if (showHumidityMinMaxBand && range !== '24h') {
+    HUMIDITY_SERIES.forEach(s => {
+      const pts = byKey[s.key] || [];
+      if (!pts.length || pts[0].lo === undefined) return;
+      const loIdx = datasets.length + 1;
+      datasets.push({
+        label: s.label + ' max', data: pts.map(p => ({x:p.x, y:p.hi})),
+        borderColor:'transparent', backgroundColor:s.color + '1a', fill:loIdx,
+        pointRadius:0, borderWidth:0, tension:0.3, order:5,
+      });
+      datasets.push({
+        label: s.label + ' min', data: pts.map(p => ({x:p.x, y:p.lo})),
+        borderColor:'transparent', backgroundColor:'transparent', fill:false,
+        pointRadius:0, borderWidth:0, tension:0.3, order:5,
+      });
+    });
+  }
+
+  const ctx = document.getElementById('humidityChart').getContext('2d');
+  if (humidityChart) { humidityChart.destroy(); humidityChart = null; }
+
+  humidityChart = new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true,
+      parsing: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor:'#1a1e2a', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+          titleFont:{ family:"'DM Mono', monospace", size:11 },
+          bodyFont: { family:"'DM Mono', monospace", size:11 },
+          titleColor:'rgba(255,255,255,0.5)', bodyColor:'#e8eaf0',
+          filter: item => !item.dataset.label.endsWith(' max') && !item.dataset.label.endsWith(' min'),
+          callbacks: {
+            title: items => {
+              if (!items.length) return '';
+              const d = new Date(items[0].parsed.x);
+              return range === '24h'
+                ? d.toLocaleTimeString('en-AU', {weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false})
+                : d.toLocaleDateString('en-AU', {weekday:'short',day:'numeric',month:'short',hour: range==='7d'?'2-digit':undefined,minute: range==='7d'?'2-digit':undefined,hour12:false});
+            },
+            label: ctx => ' ' + ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(0) + '%'
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: { unit:cfg.unit, displayFormats:{ [cfg.unit]:cfg.fmt } },
+          grid: { color:'rgba(255,255,255,0.04)' },
+          ticks: { color:'rgba(255,255,255,0.3)', font:{family:"'DM Mono', monospace",size:10}, maxTicksLimit:10, maxRotation:0 }
+        },
+        y: {
+          min: 30, max: 100,
+          grid: { color:'rgba(255,255,255,0.04)' },
+          ticks: { color:'rgba(255,255,255,0.3)', font:{family:"'DM Mono', monospace",size:10}, callback: v => v+'%' }
+        }
+      }
+    }
+  });
+}
+
+// Append current live readings every 30s. Only meaningful for the rolling
+// 24h view — 7d/30d are bucketed means kept fresh by the periodic reseed
+// instead (mixing a raw live point into a bucketed series would show as a
+// stray outlier point).
 function updateHumidityChart(states) {
-  if (!_HA_TOKEN || !states) return;
+  if (!_HA_TOKEN || !states || currentHumidityRange !== '24h' || !humidityChart) return;
   const now = Date.now();
 
-  const liveVals = [
-    parseFloat(states[HUMIDITY_ENTITIES.kitchen]     ? states[HUMIDITY_ENTITIES.kitchen].state     : NaN),
-    parseFloat(states[HUMIDITY_ENTITIES.bathTherm]   ? states[HUMIDITY_ENTITIES.bathTherm].state   : NaN),
-    parseFloat(states[HUMIDITY_ENTITIES.bathPresence]? states[HUMIDITY_ENTITIES.bathPresence].state : NaN),
-    parseFloat(states[HUMIDITY_ENTITIES.lounge]      ? states[HUMIDITY_ENTITIES.lounge].state      : NaN),
-    parseFloat(states[HUMIDITY_ENTITIES.outside]     ? states[HUMIDITY_ENTITIES.outside].state     : NaN),
-  ];
+  const liveVals = HUMIDITY_SERIES.map(s => {
+    const id = HUMIDITY_ENTITIES[s.key];
+    return parseFloat(states[id] ? states[id].state : NaN);
+  });
 
   // Drop points older than 24h instead of capping by count — a fixed count
   // cap shrinks the visible window over time as live points arrive faster
