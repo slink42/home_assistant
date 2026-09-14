@@ -1278,8 +1278,8 @@ async function loadState() {
     'sensor.thermometer_outside_temperature',
     'sensor.thermometer_and_presence_lounge_temperature',
     'sensor.thermometer_study_temperature',
-    'sensor.temperature_and_humidity_alarm_temperature',
-    'sensor.temperature_and_humidity_alarm_humidity',
+    'sensor.alpstuga_air_quality_monitor_temperature',
+    'sensor.alpstuga_air_quality_monitor_humidity',
     'sensor.thermometer_roof_temperature',
     'weather.forecast_home',
   ];
@@ -1295,8 +1295,8 @@ async function loadState() {
     'sensor.thermometer_outside_temperature':            'val-outside',
     'sensor.thermometer_and_presence_lounge_temperature':'val-lounge',
     'sensor.thermometer_study_temperature':              'val-study',
-    'sensor.temperature_and_humidity_alarm_temperature': 'val-kitchen',
-    'sensor.temperature_and_humidity_alarm_humidity':    'val-humidity',
+    'sensor.alpstuga_air_quality_monitor_temperature': 'val-kitchen',
+    'sensor.alpstuga_air_quality_monitor_humidity':    'val-humidity',
     'sensor.thermometer_roof_temperature':               'val-roof',
   };
   Object.entries(sens).forEach(([id, elId]) => {
@@ -1364,9 +1364,9 @@ const SENSOR_ENTITY_MAP = {
   outside:  'sensor.thermometer_outside_temperature',
   lounge:   'sensor.thermometer_and_presence_lounge_temperature',
   study:    'sensor.thermometer_study_temperature',
-  kitchen:  'sensor.temperature_and_humidity_alarm_temperature',
+  kitchen:  'sensor.alpstuga_air_quality_monitor_temperature',
   roof:     'sensor.thermometer_roof_temperature',
-  humidity: 'sensor.temperature_and_humidity_alarm_humidity',
+  humidity: 'sensor.alpstuga_air_quality_monitor_humidity',
 };
 
 // Map sensor keys → their related iZone climate entity (null = no zone)

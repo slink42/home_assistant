@@ -1172,8 +1172,8 @@ const ENTITIES = {
   outside:    'sensor.thermometer_outside_temperature',
   lounge:     'sensor.thermometer_and_presence_lounge_temperature',
   studyTemp:  'sensor.thermometer_study_temperature',
-  kitchenTemp:'sensor.temperature_and_humidity_alarm_temperature',
-  kitchenHum: 'sensor.temperature_and_humidity_alarm_humidity',
+  kitchenTemp:'sensor.alpstuga_air_quality_monitor_temperature',
+  kitchenHum: 'sensor.alpstuga_air_quality_monitor_humidity',
   roofTemp:   'sensor.thermometer_roof_temperature',
   bedroomTemp:'sensor.bedroom_izone_temperature',
   weather:    'weather.forecast_home',
@@ -1359,7 +1359,7 @@ function applySensorState(entityId, state) {
     'sensor.thermometer_outside_temperature':              '.val-outside',
     'sensor.thermometer_and_presence_lounge_temperature': '.val-lounge',
     'sensor.thermometer_study_temperature':               '.val-study',
-    'sensor.temperature_and_humidity_alarm_temperature':  '.val-kitchen',
+    'sensor.alpstuga_air_quality_monitor_temperature':  '.val-kitchen',
     'sensor.thermometer_roof_temperature':                '.val-roof',
   };
   const sel = elMap[entityId];
@@ -1821,7 +1821,7 @@ function toggleTempSeries(idx) {
 // collisions across midnight which caused lines to loop back in time.
 
 const HUMIDITY_ENTITIES = {
-  kitchen:     'sensor.temperature_and_humidity_alarm_humidity',
+  kitchen:     'sensor.alpstuga_air_quality_monitor_humidity',
   bathTherm:   'sensor.thermometer_bathroom_humidity',
   bathPresence:'sensor.thermometer_and_presence_bathroom_humidity',
   lounge:      'sensor.thermometer_and_presence_lounge_humidity',
@@ -1958,9 +1958,9 @@ const STAT_CONFIG = {
   outside:  { label:'Outside',          color:'#f0a020', unit:'°C', yMin:12, yMax:28, entity:'sensor.thermometer_outside_temperature' },
   lounge:   { label:'Lounge',           color:'#2dd4bf', unit:'°C', yMin:17, yMax:26, entity:'sensor.thermometer_and_presence_lounge_temperature' },
   study:    { label:'Study',            color:'#60a0f0', unit:'°C', yMin:17, yMax:26, entity:'sensor.thermometer_study_temperature' },
-  kitchen:  { label:'Kitchen',          color:'#4ade80', unit:'°C', yMin:17, yMax:25, entity:'sensor.temperature_and_humidity_alarm_temperature' },
+  kitchen:  { label:'Kitchen',          color:'#4ade80', unit:'°C', yMin:17, yMax:25, entity:'sensor.alpstuga_air_quality_monitor_temperature' },
   roof:     { label:'Roof cavity',      color:'#f06050', unit:'°C', yMin:12, yMax:42, entity:'sensor.thermometer_roof_temperature' },
-  humidity: { label:'Kitchen Humidity', color:'#60a0f0', unit:'%',  yMin:40, yMax:80, entity:'sensor.temperature_and_humidity_alarm_humidity' },
+  humidity: { label:'Kitchen Humidity', color:'#60a0f0', unit:'%',  yMin:40, yMax:80, entity:'sensor.alpstuga_air_quality_monitor_humidity' },
 };
 const STAT_ORDER = ['outside','lounge','study','kitchen','roof','humidity'];
 
