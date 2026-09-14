@@ -2223,6 +2223,14 @@ async function openStatPopup(sensorKey) {
   const lows  = raw.map(d => ({x:d.s, y:d.lo}));
   const highs = raw.map(d => ({x:d.s, y:d.hi}));
 
+  // cfg.yMin/yMax are sane defaults, not hard bounds — widen them when the
+  // actual 7-day data falls outside that range instead of clipping it.
+  const dataLo = Math.min(...lows.map(p => p.y));
+  const dataHi = Math.max(...highs.map(p => p.y));
+  const pad = Math.max((dataHi - dataLo) * 0.1, 1);
+  const yMin = Math.min(cfg.yMin, Math.floor(dataLo - pad));
+  const yMax = Math.max(cfg.yMax, Math.ceil(dataHi + pad));
+
   statChartInstance = new Chart(canvas, {
     type:'line',
     data:{ datasets:[
@@ -2262,7 +2270,7 @@ async function openStatPopup(sensorKey) {
         x:{type:'time', time:{unit:'day', displayFormats:{day:'EEE d MMM'}},
            grid:{color:'rgba(255,255,255,0.04)'},
            ticks:{color:'rgba(255,255,255,0.3)',font:{family:"'DM Mono', monospace",size:10},maxRotation:0}},
-        y:{min:cfg.yMin, max:cfg.yMax,
+        y:{min:yMin, max:yMax,
            grid:{color:'rgba(255,255,255,0.05)'},
            ticks:{color:'rgba(255,255,255,0.3)',font:{family:"'DM Mono', monospace",size:10},
                   callback: v => v + cfg.unit}}
