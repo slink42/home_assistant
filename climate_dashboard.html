@@ -1160,11 +1160,7 @@
 // ══════════════════════════════════════════════
 // HOME ASSISTANT API CONFIG
 // ══════════════════════════════════════════════
-const HA_URL = (() => {
-  const o = window.location.origin;
-  if (o.includes('8123') || o.includes('homeassistant') || o.includes('slink42')) return o;
-  return 'https://ha.slink42.com';
-})();
+const HA_URL = 'https://ha.slink42.com';
 let _HA_TOKEN = '';
 
 const ENTITIES = {
